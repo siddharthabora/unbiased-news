@@ -52,9 +52,42 @@ const RSS_FEEDS = [
 
   // Science / Environment
   { name: 'BBC Science',       url: 'https://feeds.bbci.co.uk/news/science_and_environment/rss.xml',    topics: ['Science', 'Environment'] },
+
+  // Crypto & Web3
+  { name: 'CoinDesk',          url: 'https://www.coindesk.com/arc/outboundfeeds/rss/',                  topics: ['Crypto & Web3'] },
+  { name: 'CoinTelegraph',     url: 'https://cointelegraph.com/rss',                                    topics: ['Crypto & Web3'] },
+  { name: 'Decrypt',           url: 'https://decrypt.co/feed',                                          topics: ['Crypto & Web3'] },
+
+  // Stocks & Investments
+  { name: 'Investing.com',     url: 'https://www.investing.com/rss/news.rss',                           topics: ['Stocks & Investments'] },
+  { name: 'CNBC Markets',      url: 'https://www.cnbc.com/id/10000664/device/rss/rss.html',             topics: ['Stocks & Investments', 'Finance'] },
+  { name: 'Economic Times',    url: 'https://economictimes.indiatimes.com/markets/rss.cms',             topics: ['Stocks & Investments', 'Finance'] },
+
+  // Supply Chain
+  { name: 'Supply Chain Dive', url: 'https://www.supplychaindive.com/feeds/news/',                      topics: ['Supply Chain'] },
+  { name: 'Manufacturing Dive',url: 'https://www.manufacturingdive.com/feeds/news/',                    topics: ['Supply Chain'] },
+  { name: 'FreightWaves',      url: 'https://www.freightwaves.com/news/feed',                           topics: ['Supply Chain'] },
+
+  // War & Conflict
+  { name: 'War on the Rocks',  url: 'https://warontherocks.com/feed/',                                  topics: ['War & Conflict', 'Geopolitics'] },
+  { name: 'Defense One',       url: 'https://www.defenseone.com/rss/all/',                              topics: ['War & Conflict'] },
+  { name: 'Breaking Defense',  url: 'https://breakingdefense.com/feed/',                                topics: ['War & Conflict'] },
+
+  // Art
+  { name: 'Artnet News',       url: 'https://news.artnet.com/feed',                                     topics: ['Art', 'Culture'] },
+  { name: 'Hyperallergic',     url: 'https://hyperallergic.com/feed/',                                  topics: ['Art', 'Culture'] },
+  { name: 'The Art Newspaper', url: 'https://www.theartnewspaper.com/rss',                              topics: ['Art'] },
 ]
 
-const MAX_PER_SOURCE = 4  // hard cap so no single outlet dominates
+// Sources without RSS — fetched via Jina AI Reader (free web-to-text service)
+const JINA_SOURCES = [
+  { name: 'Coinbase Blog',     url: 'https://www.coinbase.com/blog',              topics: ['Crypto & Web3'] },
+  { name: 'Binance Blog',      url: 'https://www.binance.com/en/blog',            topics: ['Crypto & Web3'] },
+  { name: 'Supply Chain Brain',url: 'https://www.supplychainbrain.com/',          topics: ['Supply Chain'] },
+  { name: 'Yahoo Finance Crypto', url: 'https://finance.yahoo.com/markets/crypto/', topics: ['Crypto & Web3', 'Stocks & Investments'] },
+]
+
+const MAX_PER_SOURCE = 4
 
 export interface NewsItem {
   title: string
@@ -66,11 +99,48 @@ export interface NewsItem {
   feedTopics: string[]
 }
 
+async function scrapeWithJina(source: { name: string; url: string; topics: string[] }): Promise<NewsItem[]> {
+  try {
+    const res = await fetch(`https://r.jina.ai/${source.url}`, {
+      headers: { Accept: 'text/plain' },
+      signal: AbortSignal.timeout(15000),
+    })
+    if (!res.ok) return []
+    const text = await res.text()
+
+    // Extract markdown links: [Article Title](https://...)
+    const linkPattern = /\[([^\]]{25,200})\]\((https?:\/\/[^)]+)\)/g
+    const articles: NewsItem[] = []
+    const seen = new Set<string>()
+    let match
+
+    while ((match = linkPattern.exec(text)) !== null && articles.length < MAX_PER_SOURCE) {
+      const [, title, link] = match
+      if (seen.has(link) || link === source.url) continue
+      if (link.includes('#') || /\/(tag|category|author|page)\//i.test(link)) continue
+      seen.add(link)
+      articles.push({
+        title: title.trim(),
+        summary: '',
+        link,
+        source: source.name,
+        publishedAt: new Date().toISOString(),
+        feedTopics: source.topics,
+      })
+    }
+
+    return articles
+  } catch {
+    return []
+  }
+}
+
 export async function fetchAllNews(): Promise<NewsItem[]> {
   const rawResults: NewsItem[] = []
 
-  await Promise.allSettled(
-    RSS_FEEDS.map(async (feed) => {
+  await Promise.allSettled([
+    // RSS feeds
+    ...RSS_FEEDS.map(async (feed) => {
       const parsed = await parser.parseURL(feed.url)
       for (const item of parsed.items.slice(0, MAX_PER_SOURCE)) {
         if (!item.title || !item.link) continue
@@ -84,10 +154,15 @@ export async function fetchAllNews(): Promise<NewsItem[]> {
           feedTopics: feed.topics,
         })
       }
-    })
-  )
+    }),
+    // Jina-scraped sources
+    ...JINA_SOURCES.map(async (source) => {
+      const articles = await scrapeWithJina(source)
+      rawResults.push(...articles)
+    }),
+  ])
 
-  // Secondary cap: max MAX_PER_SOURCE articles per source name across all feeds
+  // Secondary cap: max MAX_PER_SOURCE articles per source name
   const countBySource: Record<string, number> = {}
   const results: NewsItem[] = []
   for (const item of rawResults) {

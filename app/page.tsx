@@ -5,17 +5,20 @@ import { LeftColumns, RightColumns } from './components/ScrollingImages'
 
 const TOPICS = [
   'Geopolitics',
-  'Stocks & Investments',
+  'World',
   'War & Conflict',
   'Technology',
   'Finance',
+  'Stocks & Investments',
   'Crypto & Web3',
   'Supply Chain',
-  'Art',
   'Music',
-  'Health & Wellness',
+  'Art',
   'Culture',
-  'Pet Care',
+  'Entertainment',
+  'Health & Wellness',
+  'Science',
+  'Environment',
 ]
 
 const TIMEZONES = [
@@ -88,7 +91,7 @@ export default function Home() {
         </h1>
         <p className="text-zinc-400 text-base leading-relaxed">
           10 unbiased, AI-curated stories delivered to your inbox every morning.
-          Sourced from Reuters, Al Jazeera, and more — bias-checked before sending.
+          Sourced from Al Jazeera, BBC, CoinDesk, Supply Chain Dive, and more — bias-checked before sending.
         </p>
       </div>
 
