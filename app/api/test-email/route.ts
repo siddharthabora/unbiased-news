@@ -3,9 +3,9 @@ import { selectAndSummarize } from '@/lib/processNews'
 import { sendDigestEmail } from '@/lib/sendEmail'
 
 const TEST_SUBSCRIBERS = [
-  { email: 'siddhartha.agspert@gmail.com', topics: ['Technology'] },
-  { email: 'siddhartha@agspert.com',        topics: ['Culture'] },
-  { email: 'siddharthasbora101@gmail.com',  topics: ['Health & Wellness'] },
+  { email: 'siddhartha.agspert@gmail.com', topics: ['Crypto & Web3'] },
+  { email: 'siddhartha@agspert.com',        topics: ['Supply Chain', 'War & Conflict'] },
+  { email: 'siddharthasbora101@gmail.com',  topics: ['Art'] },
 ]
 
 export async function GET() {
