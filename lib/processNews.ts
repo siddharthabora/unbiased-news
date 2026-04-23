@@ -218,7 +218,10 @@ export async function selectAndSummarize(
   news: NewsItem[],
   topics: string[]
 ): Promise<ProcessedNewsItem[]> {
-  const indices = await selectRelevantIndices(news, topics)
-  const selected = indices.map((i) => news[i])
+  // Pre-filter by feedTopics before passing to the AI — eliminates cross-topic contamination
+  const relevant = news.filter(item => item.feedTopics.some(t => topics.includes(t)))
+  const pool = relevant.length >= 15 ? relevant : news
+  const indices = await selectRelevantIndices(pool, topics)
+  const selected = indices.map((i) => pool[i])
   return analyzeArticles(selected)
 }

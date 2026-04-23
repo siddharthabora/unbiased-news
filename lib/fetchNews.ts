@@ -80,10 +80,7 @@ const RSS_FEEDS = [
 ]
 
 // Sources without RSS — fetched via Jina AI Reader (free web-to-text service)
-const JINA_SOURCES = [
-  { name: 'Coinbase Blog',     url: 'https://www.coinbase.com/blog',              topics: ['Crypto & Web3'] },
-  { name: 'Supply Chain Brain',url: 'https://www.supplychainbrain.com/',          topics: ['Supply Chain'] },
-]
+const JINA_SOURCES: { name: string; url: string; topics: string[] }[] = []
 
 const MAX_PER_SOURCE = 4
 
