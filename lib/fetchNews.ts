@@ -82,9 +82,7 @@ const RSS_FEEDS = [
 // Sources without RSS — fetched via Jina AI Reader (free web-to-text service)
 const JINA_SOURCES = [
   { name: 'Coinbase Blog',     url: 'https://www.coinbase.com/blog',              topics: ['Crypto & Web3'] },
-  { name: 'Binance Blog',      url: 'https://www.binance.com/en/blog',            topics: ['Crypto & Web3'] },
   { name: 'Supply Chain Brain',url: 'https://www.supplychainbrain.com/',          topics: ['Supply Chain'] },
-  { name: 'Yahoo Finance Crypto', url: 'https://finance.yahoo.com/markets/crypto/', topics: ['Crypto & Web3', 'Stocks & Investments'] },
 ]
 
 const MAX_PER_SOURCE = 4
@@ -162,10 +160,18 @@ export async function fetchAllNews(): Promise<NewsItem[]> {
     }),
   ])
 
+  // Deduplicate by URL — same story from two feeds should only appear once
+  const seenUrls = new Set<string>()
+  const deduped = rawResults.filter(item => {
+    if (seenUrls.has(item.link)) return false
+    seenUrls.add(item.link)
+    return true
+  })
+
   // Secondary cap: max MAX_PER_SOURCE articles per source name
   const countBySource: Record<string, number> = {}
   const results: NewsItem[] = []
-  for (const item of rawResults) {
+  for (const item of deduped) {
     countBySource[item.source] = (countBySource[item.source] ?? 0) + 1
     if (countBySource[item.source] <= MAX_PER_SOURCE) results.push(item)
   }
