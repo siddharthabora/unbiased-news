@@ -59,13 +59,14 @@ async function selectRelevantIndices(news: NewsItem[], topics: string[]): Promis
       },
       {
         role: 'user',
-        content: `Select up to 10 articles that are DIRECTLY and GENUINELY relevant to these topics: ${topics.join(', ')}.
+        content: `Select up to 10 articles most relevant to the subscriber's topic(s): ${topics.join(', ')}.
 
-STRICT RULES:
-1. Only include articles that clearly match at least one of the requested topics. Do NOT include articles just because they are interesting or important — topic relevance is the only criterion.
-2. If fewer than 10 relevant articles exist, return fewer. Do not pad with loosely related content.
-3. Spread selections across different sources — do not pick more than 4 articles from the same source if alternatives exist.
-4. Prefer articles from sources whose feed is dedicated to the matching topic (e.g. BBC Health for health topics, Rolling Stone for music).
+SELECTION RULES:
+1. Include an article if it directly covers the topic OR if its content is a direct operational consequence of the topic — for example: fuel costs rising because of armed conflict → relevant to War & Conflict; a manufacturer's green energy adoption → relevant to both Supply Chain and Environment; defense procurement → relevant to both War & Conflict and Supply Chain.
+2. Do NOT include articles with only vague thematic overlap. A story must have a clear, traceable connection to the topic to qualify.
+3. If two or more articles cover the same underlying event or announcement, include only the single most substantive or primary-source one. Never pick the same story twice from different outlets.
+4. Do not pick more than 3 articles from the same source.
+5. If fewer than 10 relevant articles exist, return fewer — do not pad with loosely related content.
 
 Articles:
 ${articlesText}
@@ -220,7 +221,7 @@ export async function selectAndSummarize(
 ): Promise<ProcessedNewsItem[]> {
   // Pre-filter by feedTopics before passing to the AI — eliminates cross-topic contamination
   const relevant = news.filter(item => item.feedTopics.some(t => topics.includes(t)))
-  const pool = relevant.length >= 15 ? relevant : news
+  const pool = relevant.length >= 8 ? relevant : news
   const indices = await selectRelevantIndices(pool, topics)
   const selected = indices.map((i) => pool[i])
   return analyzeArticles(selected)

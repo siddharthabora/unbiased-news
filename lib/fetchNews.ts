@@ -15,6 +15,77 @@ const parser = new Parser<Record<string, unknown>, CustomItem>({
   },
 })
 
+// Keywords that, if found in an article's title or summary, expand its feedTopics
+// beyond its source feed's base tags — enabling cross-topic relevance.
+const TOPIC_KEYWORD_EXPANSION: Record<string, string[]> = {
+  'Environment': [
+    'climate', 'emission', 'emissions', 'renewable', 'fossil fuel', 'carbon',
+    'sustainability', 'green energy', 'biodiversity', 'deforestation', 'pollution',
+    'pfas', 'net zero', 'global warming', 'wildlife', 'clean energy',
+    'greenhouse', 'decarboniz', 'solar power', 'wind power', 'environmental',
+    'ecology', 'ecosystem', 'conservation', 'plastic waste', 'forever chemical',
+  ],
+  'War & Conflict': [
+    'ceasefire', 'airstrike', 'air strike', 'invasion', 'blockade',
+    'missile', 'drone strike', 'combat', 'battlefield', 'armed forces',
+    'casualties', 'siege', 'occupation', 'insurgency', 'militia',
+    'warzone', 'war zone', 'military operation', 'shelling', 'bombing',
+    'offensive', 'counteroffensive', 'troops deployed',
+  ],
+  'Supply Chain': [
+    'supply chain', 'logistics', 'freight', 'procurement',
+    'warehouse', 'import tariff', 'export ban', 'production halt',
+    'distribution network', 'inventory', 'manufacturing capacity',
+    'reshoring', 'nearshoring', 'port congestion', 'shipping lane', 'cargo',
+  ],
+  'Crypto & Web3': [
+    'bitcoin', 'cryptocurrency', 'crypto', 'blockchain', 'ethereum', 'defi',
+    'nft', 'web3', 'polymarket', 'stablecoin', 'altcoin', 'dao',
+    'smart contract', 'digital asset', 'digital currency', 'crypto exchange',
+  ],
+  'Geopolitics': [
+    'diplomatic', 'geopolitical', 'treaty', 'sovereignty', 'territorial',
+    'foreign policy', 'bilateral', 'multilateral', 'un security council',
+    'nato summit', 'g7', 'g20', 'sanctions regime', 'state visit',
+  ],
+  'Technology': [
+    'artificial intelligence', 'machine learning', 'semiconductor', 'quantum computing',
+    'cybersecurity', 'data breach', 'neural network', 'silicon valley',
+    'big tech', 'cloud computing', 'autonomous vehicle', 'robotics', 'generative ai',
+  ],
+  'Finance': [
+    'interest rate', 'inflation', 'recession', 'federal reserve',
+    'central bank', 'bond yield', 'ipo', 'monetary policy',
+    'fiscal policy', 'sovereign debt', 'credit rating',
+  ],
+  'Health & Wellness': [
+    'pandemic', 'vaccine', 'clinical trial', 'fda approval', 'mental health',
+    'public health', 'disease outbreak', 'pharmaceutical', 'drug approval',
+    'nhs', 'mortality rate', 'pathogen', 'healthcare system',
+  ],
+  'Stocks & Investments': [
+    'stock market', 'equity market', 'dividend', 'earnings report',
+    'market cap', 'bull market', 'bear market', 'wall street', 'nasdaq',
+    's&p 500', 'hedge fund', 'venture capital', 'private equity',
+  ],
+  'Art': [
+    'artwork', 'exhibition', 'gallery', 'auction', 'curator', 'sculpture',
+    'painting', 'art market', 'museum collection', 'retrospective',
+    'contemporary art', 'installation art',
+  ],
+}
+
+function expandTopicsFromContent(title: string, summary: string, baseTopics: string[]): string[] {
+  const content = (title + ' ' + summary).toLowerCase()
+  const expanded = new Set(baseTopics)
+  for (const [topic, keywords] of Object.entries(TOPIC_KEYWORD_EXPANSION)) {
+    if (!expanded.has(topic) && keywords.some(kw => content.includes(kw))) {
+      expanded.add(topic)
+    }
+  }
+  return Array.from(expanded)
+}
+
 const RSS_FEEDS = [
   // Geopolitics / World
   { name: 'Al Jazeera',        url: 'https://www.aljazeera.com/xml/rss/all.xml',                          topics: ['Geopolitics', 'World'] },
@@ -51,7 +122,11 @@ const RSS_FEEDS = [
   { name: 'The Guardian Culture', url: 'https://www.theguardian.com/culture/rss',                       topics: ['Culture', 'Entertainment'] },
 
   // Science / Environment
-  { name: 'BBC Science',       url: 'https://feeds.bbci.co.uk/news/science_and_environment/rss.xml',    topics: ['Science', 'Environment'] },
+  { name: 'BBC Science',              url: 'https://feeds.bbci.co.uk/news/science_and_environment/rss.xml',    topics: ['Science', 'Environment'] },
+  { name: 'The Guardian Environment', url: 'https://www.theguardian.com/environment/rss',                     topics: ['Environment', 'Science'] },
+  { name: 'Inside Climate News',      url: 'https://insideclimatenews.org/feed/',                             topics: ['Environment'] },
+  { name: 'Carbon Brief',            url: 'https://www.carbonbrief.org/feed/',                               topics: ['Environment', 'Science'] },
+  { name: 'Yale Environment 360',    url: 'https://e360.yale.edu/feed',                                      topics: ['Environment', 'Science'] },
 
   // Crypto & Web3
   { name: 'CoinDesk',          url: 'https://www.coindesk.com/arc/outboundfeeds/rss/',                  topics: ['Crypto & Web3'] },
@@ -146,7 +221,7 @@ export async function fetchAllNews(): Promise<NewsItem[]> {
           source: feed.name,
           publishedAt: item.pubDate ?? '',
           imageUrl: item['media:content']?.$.url ?? item.enclosure?.url,
-          feedTopics: feed.topics,
+          feedTopics: expandTopicsFromContent(item.title, item.contentSnippet ?? '', feed.topics),
         })
       }
     }),
