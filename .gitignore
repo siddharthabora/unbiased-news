@@ -12,6 +12,7 @@
 
 # testing
 /coverage
+/app/api/test-email
 
 # next.js
 /.next/
