@@ -3,8 +3,7 @@ import { ProcessedNewsItem } from './processNews'
 
 const oauth2Client = new google.auth.OAuth2(
   process.env.GOOGLE_CLIENT_ID,
-  process.env.GOOGLE_CLIENT_SECRET,
-  'http://localhost:3000/oauth-callback'
+  process.env.GOOGLE_CLIENT_SECRET
 )
 
 oauth2Client.setCredentials({ refresh_token: process.env.GOOGLE_REFRESH_TOKEN })
@@ -154,7 +153,7 @@ function buildEmailHtml(digest: ProcessedNewsItem[], topics: string[]): string {
         <tr><td style="padding-top:16px;border-top:1px solid #1a1a1a;text-align:center">
           <p style="font-size:11px;color:#333;margin:0">
             You're receiving this because you subscribed at AI Daily Brief.<br>
-            Sent by <a href="mailto:unbaisedai.news@gmail.com" style="color:#444">unbaisedai.news@gmail.com</a>
+            Sent by <a href="mailto:${process.env.GMAIL_FROM}" style="color:#444">${process.env.GMAIL_FROM}</a>
           </p>
         </td></tr>
 
