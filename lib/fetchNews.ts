@@ -6,14 +6,26 @@ type CustomItem = {
   pubDate: string
   contentSnippet?: string
   'media:content'?: { $: { url: string } }
+  'media:thumbnail'?: { $: { url: string } }
   enclosure?: { url: string }
+  'content:encoded'?: string
 }
 
 const parser = new Parser<Record<string, unknown>, CustomItem>({
   customFields: {
-    item: [['media:content', 'media:content']],
+    item: [
+      ['media:content', 'media:content'],
+      ['media:thumbnail', 'media:thumbnail'],
+      ['content:encoded', 'content:encoded'],
+    ],
   },
 })
+
+function extractFirstImage(html: string): string | undefined {
+  const match = html.match(/<img[^>]+src=["']([^"']+)["']/i)
+  const url = match?.[1]
+  return url?.startsWith('http') ? url : undefined
+}
 
 // Keywords that, if found in an article's title or summary, expand its feedTopics
 // beyond its source feed's base tags — enabling cross-topic relevance.
@@ -220,7 +232,7 @@ export async function fetchAllNews(): Promise<NewsItem[]> {
           link: item.link,
           source: feed.name,
           publishedAt: item.pubDate ?? '',
-          imageUrl: item['media:content']?.$.url ?? item.enclosure?.url,
+          imageUrl: item['media:content']?.$.url ?? item['media:thumbnail']?.$.url ?? item.enclosure?.url ?? (item['content:encoded'] ? extractFirstImage(item['content:encoded']) : undefined),
           feedTopics: expandTopicsFromContent(item.title, item.contentSnippet ?? '', feed.topics),
         })
       }

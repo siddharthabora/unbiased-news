@@ -1,7 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { LeftColumns, RightColumns } from './components/ScrollingImages'
+
+const HEADLINE = 'THE WORLD, UNBIASED.'
 
 const TOPICS = [
   'Geopolitics',
@@ -44,6 +46,36 @@ export default function Home() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
+  const [displayedHeadline, setDisplayedHeadline] = useState('')
+  const [headlineDone, setHeadlineDone] = useState(false)
+  const [showContent, setShowContent] = useState(false)
+  const [scanDone, setScanDone] = useState(false)
+
+  useEffect(() => {
+    // Scan line lasts 1.2s, then remove it from the DOM
+    const scanTimer = setTimeout(() => setScanDone(true), 3100)
+
+    // Start typing after scan line has swept past the headline area (~1.5s in)
+    const startTimer = setTimeout(() => {
+      let i = 0
+      const interval = setInterval(() => {
+        i++
+        setDisplayedHeadline(HEADLINE.slice(0, i))
+        if (i >= HEADLINE.length) {
+          clearInterval(interval)
+          setHeadlineDone(true)
+          setTimeout(() => setShowContent(true), 350)
+        }
+      }, 55)
+      return () => clearInterval(interval)
+    }, 1500)
+
+    return () => {
+      clearTimeout(scanTimer)
+      clearTimeout(startTimer)
+    }
+  }, [])
+
   function toggleTopic(topic: string) {
     setSelectedTopics(prev =>
       prev.includes(topic) ? prev.filter(t => t !== topic) : [...prev, topic]
@@ -82,104 +114,132 @@ export default function Home() {
     <div className="w-full max-w-xl mx-auto py-16 px-6">
 
       {/* Header */}
-      <div className="mb-12">
-        <p className="text-xs font-medium tracking-widest uppercase text-zinc-500 mb-4">
-          AI Newsletter
-        </p>
-        <h1 className="text-4xl font-semibold tracking-tight mb-4">
-          The world, briefed.
+      <div className="mb-10">
+
+        {/* LIVE badge */}
+        <div className="flex items-center gap-2 mb-6">
+          <span className="live-dot" />
+          <span className="text-xs font-medium tracking-widest uppercase text-zinc-500">Live · Daily</span>
+        </div>
+
+        {/* Typewriter headline */}
+        <h1 className="text-5xl font-black tracking-tight leading-[1.1] mb-6" style={{ minHeight: '1.2em' }}>
+          {displayedHeadline}
+          {!headlineDone && <span className="cursor-blink">|</span>}
         </h1>
-        <p className="text-zinc-400 text-base leading-relaxed">
-          10 unbiased, AI-curated stories delivered to your inbox every morning.
-          Sourced from Al Jazeera, BBC, CoinDesk, Supply Chain Dive, and more — bias-checked before sending.
-        </p>
+
+        {/* Subtitle — fades in after headline finishes */}
+        <div
+          style={{
+            opacity: showContent ? 1 : 0,
+            transform: showContent ? 'translateY(0)' : 'translateY(14px)',
+            transition: 'opacity 0.7s ease, transform 0.7s ease',
+          }}
+        >
+          <p className="text-zinc-300 text-base leading-relaxed mb-3">
+            Every story traced to its origin, checked for omissions, and scored for authenticity and neutrality before it reaches you.
+          </p>
+          <p className="text-zinc-500 text-sm leading-relaxed">
+            Choose the topics you are interested in and your local timezone. The latest news will be delivered to your email at 9:00 a.m everyday.
+          </p>
+        </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-8">
+      {/* Form — slides in slightly after subtitle */}
+      <div
+        style={{
+          opacity: showContent ? 1 : 0,
+          transform: showContent ? 'translateY(0)' : 'translateY(20px)',
+          transition: 'opacity 0.7s ease 150ms, transform 0.7s ease 150ms',
+        }}
+      >
+        <form onSubmit={handleSubmit} className="flex flex-col gap-8">
 
-        {/* Email */}
-        <div className="flex flex-col gap-2">
-          <label className="text-sm font-medium text-zinc-300">
-            Your email
-          </label>
-          <input
-            type="email"
-            required
-            placeholder="you@example.com"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            className="bg-[#1a1a1a] border border-zinc-800 rounded-lg px-4 py-3 text-white placeholder-zinc-600 text-sm focus:outline-none focus:border-zinc-600 transition-colors"
-          />
-        </div>
-
-        {/* Topic Picker */}
-        <div className="flex flex-col gap-3">
-          <label className="text-sm font-medium text-zinc-300">
-            Topics you care about{' '}
-            <span className="text-zinc-600 font-normal">— pick as many as you want</span>
-          </label>
-          <div className="flex flex-wrap gap-2">
-            {TOPICS.map(topic => (
-              <button
-                key={topic}
-                type="button"
-                onClick={() => toggleTopic(topic)}
-                className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${
-                  selectedTopics.includes(topic)
-                    ? 'bg-white text-black border-white'
-                    : 'bg-transparent text-zinc-400 border-zinc-700 hover:border-zinc-500 hover:text-zinc-200'
-                }`}
-              >
-                {topic}
-              </button>
-            ))}
+          {/* Email */}
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-medium text-zinc-300">
+              Your email
+            </label>
+            <input
+              type="email"
+              required
+              placeholder="you@example.com"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              className="bg-[#1a1a1a] border border-zinc-800 rounded-lg px-4 py-3 text-white placeholder-zinc-600 text-sm focus:outline-none focus:border-zinc-600 transition-colors"
+            />
           </div>
-        </div>
 
-        {/* Timezone */}
-        <div className="flex flex-col gap-2">
-          <label className="text-sm font-medium text-zinc-300">
-            Your timezone{' '}
-            <span className="text-zinc-600 font-normal">— for 9:00 AM delivery</span>
-          </label>
-          <select
-            required
-            value={timezone}
-            onChange={e => setTimezone(e.target.value)}
-            className="bg-[#1a1a1a] border border-zinc-800 rounded-lg px-4 py-3 text-sm text-white focus:outline-none focus:border-zinc-600 transition-colors appearance-none cursor-pointer"
+          {/* Topic Picker */}
+          <div className="flex flex-col gap-3">
+            <label className="text-sm font-medium text-zinc-300">
+              Topics you care about{' '}
+              <span className="text-zinc-600 font-normal">— pick as many as you want</span>
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {TOPICS.map(topic => (
+                <button
+                  key={topic}
+                  type="button"
+                  onClick={() => toggleTopic(topic)}
+                  className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${
+                    selectedTopics.includes(topic)
+                      ? 'bg-white text-black border-white'
+                      : 'bg-transparent text-zinc-400 border-zinc-700 hover:border-zinc-500 hover:text-zinc-200'
+                  }`}
+                >
+                  {topic}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Timezone */}
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-medium text-zinc-300">
+              Your timezone{' '}
+              <span className="text-zinc-600 font-normal">— for 9:00 AM delivery</span>
+            </label>
+            <select
+              required
+              value={timezone}
+              onChange={e => setTimezone(e.target.value)}
+              className="bg-[#1a1a1a] border border-zinc-800 rounded-lg px-4 py-3 text-sm text-white focus:outline-none focus:border-zinc-600 transition-colors appearance-none cursor-pointer"
+            >
+              <option value="" disabled>Select your timezone...</option>
+              {TIMEZONES.map(tz => (
+                <option key={tz.value} value={tz.value}>
+                  {tz.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Submit */}
+          <button
+            type="submit"
+            disabled={selectedTopics.length === 0 || loading}
+            className="w-full bg-white text-black font-medium py-3 rounded-lg text-sm hover:bg-zinc-200 transition-colors disabled:opacity-25 disabled:cursor-not-allowed"
           >
-            <option value="" disabled>Select your timezone...</option>
-            {TIMEZONES.map(tz => (
-              <option key={tz.value} value={tz.value}>
-                {tz.label}
-              </option>
-            ))}
-          </select>
-        </div>
+            {loading ? 'Subscribing…' : "Subscribe — it's free"}
+          </button>
 
-        {/* Submit */}
-        <button
-          type="submit"
-          disabled={selectedTopics.length === 0 || loading}
-          className="w-full bg-white text-black font-medium py-3 rounded-lg text-sm hover:bg-zinc-200 transition-colors disabled:opacity-25 disabled:cursor-not-allowed"
-        >
-          {loading ? 'Subscribing…' : "Subscribe — it's free"}
-        </button>
+          {error && (
+            <p className="text-red-400 text-xs text-center -mt-4">{error}</p>
+          )}
 
-        {error && (
-          <p className="text-red-400 text-xs text-center -mt-4">{error}</p>
-        )}
+          <p className="text-zinc-600 text-xs text-center -mt-4">
+            No account needed. Unsubscribe anytime by replying to any email.
+          </p>
 
-        <p className="text-zinc-600 text-xs text-center -mt-4">
-          No account needed. Unsubscribe anytime by replying to any email.
-        </p>
-
-      </form>
+        </form>
+      </div>
     </div>
   )
 
   return (
     <div className="h-screen bg-[#0f0f0f] text-white flex overflow-hidden">
+      {!scanDone && <div className="scan-line" />}
       <LeftColumns />
       <main className="flex-1 overflow-y-auto">
         {centerContent}
