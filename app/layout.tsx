@@ -13,8 +13,23 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AI Daily Brief",
-  description: "10 unbiased, AI-curated news stories delivered to your inbox every morning.",
+  title: "Unbiased Today",
+  description: "The world, unbiased. Every story traced to its origin, scored for authenticity and neutrality before it reaches you.",
+  metadataBase: new URL("https://www.unbiasedtoday.com"),
+  openGraph: {
+    title: "Unbiased Today",
+    description: "The world, unbiased. Every story traced to its origin, scored for authenticity and neutrality before it reaches you.",
+    url: "https://www.unbiasedtoday.com",
+    siteName: "Unbiased Today",
+    type: "website",
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Unbiased Today" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Unbiased Today",
+    description: "The world, unbiased. Every story traced to its origin, scored for authenticity and neutrality before it reaches you.",
+    images: ["/og-image.png"],
+  },
 };
 
 export default function RootLayout({
