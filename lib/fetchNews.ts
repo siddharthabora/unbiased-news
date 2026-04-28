@@ -85,6 +85,13 @@ const TOPIC_KEYWORD_EXPANSION: Record<string, string[]> = {
     'painting', 'art market', 'museum collection', 'retrospective',
     'contemporary art', 'installation art',
   ],
+  'Pet Care': [
+    'pet', 'pets', 'dog', 'dogs', 'cat', 'cats', 'puppy', 'puppies', 'kitten',
+    'veterinary', 'vet ', 'animal welfare', 'animal health', 'animal rescue',
+    'shelter animal', 'breed', 'canine', 'feline', 'livestock', 'exotic animal',
+    'wildlife rescue', 'rehoming', 'pet adoption', 'stray', 'spay', 'neuter',
+    'zoonotic', 'rabies', 'parvovirus', 'animal cruelty', 'pet food',
+  ],
 }
 
 function expandTopicsFromContent(title: string, summary: string, baseTopics: string[]): string[] {
@@ -164,6 +171,12 @@ const RSS_FEEDS = [
   { name: 'Artnet News',       url: 'https://news.artnet.com/feed',                                     topics: ['Art', 'Culture'] },
   { name: 'Hyperallergic',     url: 'https://hyperallergic.com/feed/',                                  topics: ['Art', 'Culture'] },
   { name: 'The Art Newspaper', url: 'https://www.theartnewspaper.com/rss',                              topics: ['Art'] },
+
+  // Pet Care
+  { name: 'AKC',               url: 'https://www.akc.org/feed/',                                        topics: ['Pet Care'] },
+  { name: 'PetMD',             url: 'https://www.petmd.com/feed',                                       topics: ['Pet Care'] },
+  { name: 'VOSD',              url: 'https://www.vosd.in/blog/feed/',                                   topics: ['Pet Care'] },
+  { name: 'Wild Welfare',      url: 'https://wildwelfare.org/feed/',                                    topics: ['Pet Care'] },
 ]
 
 // Sources without RSS — fetched via Jina AI Reader (free web-to-text service)
