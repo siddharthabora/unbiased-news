@@ -14,7 +14,7 @@ function scoreColor(score: number): string {
   return '#ef4444'
 }
 
-function buildEmailHtml(digest: ProcessedNewsItem[], topics: string[]): string {
+function buildEmailHtml(digest: ProcessedNewsItem[], topics: string[], articleCount: number): string {
   const articles = digest
     .map(
       (item) => `
@@ -142,7 +142,7 @@ function buildEmailHtml(digest: ProcessedNewsItem[], topics: string[]): string {
           </p>
           <h1 style="margin:0;font-size:28px;font-weight:800;color:#ffffff">AI Daily Brief</h1>
           <p style="margin:6px 0 0;font-size:13px;color:#555">
-            10 unbiased stories · Topics: ${topics.join(', ')}
+            ${articleCount} unbiased stories · Topics: ${topics.join(', ')}
           </p>
         </td></tr>
 
@@ -188,7 +188,7 @@ export async function sendDigestEmail(
 ): Promise<void> {
   const gmail = google.gmail({ version: 'v1', auth: oauth2Client })
   const subject = `Your AI Daily Brief - ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
-  const html = buildEmailHtml(digest, topics)
+  const html = buildEmailHtml(digest, topics, digest.length)
   const raw = encodeEmail(to, subject, html)
 
   await gmail.users.messages.send({
