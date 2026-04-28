@@ -3,20 +3,6 @@ import { fetchAllNews } from '@/lib/fetchNews'
 import { selectAndSummarize } from '@/lib/processNews'
 import { sendDigestEmail } from '@/lib/sendEmail'
 
-function isNineAmInTimezone(timezone: string): boolean {
-  try {
-    const hour = parseInt(
-      new Intl.DateTimeFormat('en-US', {
-        hour: 'numeric',
-        hour12: false,
-        timeZone: timezone,
-      }).format(new Date())
-    )
-    return hour === 9
-  } catch {
-    return false
-  }
-}
 
 export async function GET(request: Request) {
   // Verify this is called by Vercel cron, not a random visitor
@@ -35,9 +21,10 @@ export async function GET(request: Request) {
     return Response.json({ error: error.message }, { status: 500 })
   }
 
-  const eligible = (subscribers ?? []).filter((s) =>
-    isNineAmInTimezone(s.timezone)
-  )
+  // const eligible = (subscribers ?? []).filter((s) =>
+  //   isNineAmInTimezone(s.timezone)
+  // )
+  const eligible = subscribers ?? []
 
   if (eligible.length === 0) {
     return Response.json({ ok: true, sent: 0, message: 'No subscribers at 9am right now' })
