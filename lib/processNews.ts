@@ -43,8 +43,8 @@ export interface ProcessedNewsItem {
   headlineAccuracy: string
 }
 
-// Step 1: cheap call — select which article indices are most relevant to the user's topics
-async function selectRelevantIndices(news: NewsItem[], topics: string[]): Promise<number[]> {
+// Step 1: cheap call — select the best articles for a single topic
+async function selectRelevantIndices(news: NewsItem[], topic: string, maxCount: number): Promise<number[]> {
   const articlesText = news
     .map((item, i) => `[${i}] [${item.source}] ${item.title}`)
     .join('\n')
@@ -59,19 +59,19 @@ async function selectRelevantIndices(news: NewsItem[], topics: string[]): Promis
       },
       {
         role: 'user',
-        content: `Select up to 10 articles most relevant to the subscriber's topic(s): ${topics.join(', ')}.
+        content: `Select up to ${maxCount} articles that DIRECTLY cover the topic: "${topic}".
 
 SELECTION RULES:
-1. Include an article if it directly covers the topic OR if its content is a direct operational consequence of the topic — for example: fuel costs rising because of armed conflict → relevant to War & Conflict; a manufacturer's green energy adoption → relevant to both Supply Chain and Environment; defense procurement → relevant to both War & Conflict and Supply Chain.
-2. Do NOT include articles with only vague thematic overlap. A story must have a clear, traceable connection to the topic to qualify.
-3. If two or more articles cover the same underlying event or announcement, include only the single most substantive or primary-source one. Never pick the same story twice from different outlets.
-4. Do not pick more than 3 articles from the same source.
-5. If fewer than 10 relevant articles exist, return fewer — do not pad with loosely related content.
+1. Only include an article if it directly and specifically covers "${topic}". A clear, traceable connection is required — not vague thematic overlap.
+2. If two or more articles cover the same underlying event, include only the single most substantive one. Never pick the same story twice even from different outlets.
+3. Do not pick more than 1 article from the same source.
+4. If fewer than ${maxCount} truly relevant articles exist, return fewer — never pad with loosely related content.
+5. If zero articles are relevant, return an empty array [].
 
 Articles:
 ${articlesText}
 
-Respond ONLY with a JSON array of integers (article indices), e.g. [3, 7, 12, ...]`,
+Respond ONLY with a JSON array of integers (article indices), e.g. [3, 7] or []`,
       },
     ],
   })
@@ -79,7 +79,7 @@ Respond ONLY with a JSON array of integers (article indices), e.g. [3, 7, 12, ..
   const raw = response.choices[0].message.content ?? '[]'
   const match = raw.match(/\[[\s\S]*?\]/)
   const indices: number[] = JSON.parse(match?.[0] ?? '[]')
-  return indices.slice(0, 10)
+  return indices.slice(0, maxCount)
 }
 
 // Step 2: deep analysis call — full authenticity + bias + newsletter summary for the selected 10
@@ -219,10 +219,32 @@ export async function selectAndSummarize(
   news: NewsItem[],
   topics: string[]
 ): Promise<ProcessedNewsItem[]> {
-  // Pre-filter by feedTopics before passing to the AI — eliminates cross-topic contamination
-  const relevant = news.filter(item => item.feedTopics.some(t => topics.includes(t)))
-  const pool = relevant.length >= 8 ? relevant : news
-  const indices = await selectRelevantIndices(pool, topics)
-  const selected = indices.map((i) => pool[i])
-  return analyzeArticles(selected)
+  const usedUrls = new Set<string>()
+  const allSelected: NewsItem[] = []
+
+  // Distribute 14 slots evenly across topics, minimum 2 per topic
+  const perTopic = Math.max(2, Math.ceil(14 / topics.length))
+
+  // Select articles per topic independently — guarantees every topic gets coverage
+  await Promise.allSettled(
+    topics.map(async (topic) => {
+      // Only articles tagged for this specific topic
+      const pool = news.filter(
+        item => !usedUrls.has(item.link) && item.feedTopics.includes(topic)
+      )
+      if (pool.length === 0) return // No articles for this topic — skip, do not pad
+
+      const indices = await selectRelevantIndices(pool, topic, perTopic)
+      for (const i of indices) {
+        const item = pool[i]
+        if (item && !usedUrls.has(item.link)) {
+          usedUrls.add(item.link)
+          allSelected.push(item)
+        }
+      }
+    })
+  )
+
+  if (allSelected.length === 0) return []
+  return analyzeArticles(allSelected)
 }
