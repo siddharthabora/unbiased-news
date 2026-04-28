@@ -14,7 +14,7 @@ function scoreColor(score: number): string {
   return '#ef4444'
 }
 
-function buildEmailHtml(digest: ProcessedNewsItem[], topics: string[], articleCount: number): string {
+function buildEmailHtml(digest: ProcessedNewsItem[], topics: string[], articleCount: number, unsubscribeToken: string): string {
   const articles = digest
     .map(
       (item) => `
@@ -140,7 +140,7 @@ function buildEmailHtml(digest: ProcessedNewsItem[], topics: string[], articleCo
           <p style="margin:0 0 4px;font-size:11px;color:#555;text-transform:uppercase;letter-spacing:0.1em">
             ${new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
           </p>
-          <h1 style="margin:0;font-size:28px;font-weight:800;color:#ffffff">AI Daily Brief</h1>
+          <h1 style="margin:0;font-size:28px;font-weight:800;color:#ffffff">Unbiased Today</h1>
           <p style="margin:6px 0 0;font-size:13px;color:#555">
             ${articleCount} unbiased stories · Topics: ${topics.join(', ')}
           </p>
@@ -151,10 +151,11 @@ function buildEmailHtml(digest: ProcessedNewsItem[], topics: string[], articleCo
 
         <!-- Footer -->
         <tr><td style="padding-top:16px;border-top:1px solid #1a1a1a;text-align:center">
-          <p style="font-size:11px;color:#333;margin:0">
-            You're receiving this because you subscribed at AI Daily Brief.<br>
+          <p style="font-size:11px;color:#333;margin:0 0 8px">
+            You're receiving this because you subscribed at Unbiased Today.<br>
             Sent by <a href="mailto:${process.env.GMAIL_FROM}" style="color:#444">${process.env.GMAIL_FROM}</a>
           </p>
+          <a href="https://www.unbiasedtoday.com/api/unsubscribe?e=${unsubscribeToken}" style="font-size:11px;color:#444;text-decoration:underline">Unsubscribe</a>
         </td></tr>
 
       </table>
@@ -187,8 +188,9 @@ export async function sendDigestEmail(
   digest: ProcessedNewsItem[]
 ): Promise<void> {
   const gmail = google.gmail({ version: 'v1', auth: oauth2Client })
-  const subject = `Your AI Daily Brief - ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
-  const html = buildEmailHtml(digest, topics, digest.length)
+  const subject = `Unbiased News Today - ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+  const unsubscribeToken = Buffer.from(to).toString('base64url')
+  const html = buildEmailHtml(digest, topics, digest.length, unsubscribeToken)
   const raw = encodeEmail(to, subject, html)
 
   await gmail.users.messages.send({
