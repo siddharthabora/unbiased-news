@@ -171,7 +171,7 @@ function rfc2047(subject: string): string {
 
 function encodeEmail(to: string, subject: string, html: string): string {
   const message = [
-    `From: AI Daily Brief <${process.env.GMAIL_FROM}>`,
+    `From: Unbiased Today <${process.env.GMAIL_FROM}>`,
     `To: ${to}`,
     'Content-Type: text/html; charset=utf-8',
     'MIME-Version: 1.0',
