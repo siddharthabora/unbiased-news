@@ -212,6 +212,11 @@ const RSS_FEEDS: FeedEntry[] = [
   { name: 'The Verge',              url: 'https://www.theverge.com/rss/index.xml',                                                                topics: ['Technology'],                                                  tier: 2, regions: ['north-america'] },
   { name: 'IEEE Spectrum',          url: 'https://spectrum.ieee.org/feeds/feed.rss',                                                              topics: ['Technology', 'Science'],                                       tier: 2, regions: [] },
   { name: 'VentureBeat',            url: 'https://venturebeat.com/feed/',                                                                         topics: ['Technology'],                                                  tier: 2, regions: ['north-america'] },
+  { name: 'The Hindu Tech',         url: 'https://www.thehindu.com/sci-tech/technology/feeder/default.rss',                                       topics: ['Technology'],                                                  tier: 2, regions: ['south-asia'] },
+  { name: 'ET Tech',                url: 'https://economictimes.indiatimes.com/tech/rss.cms',                                                     topics: ['Technology'],                                                  tier: 2, regions: ['south-asia'] },
+  { name: 'Inc42',                  url: 'https://inc42.com/feed/',                                                                               topics: ['Finance', 'Stocks & Investments'],                             tier: 2, regions: ['south-asia'] },
+  { name: 'YourStory',              url: 'https://yourstory.com/feed',                                                                            topics: ['Technology'],                                                  tier: 2, regions: ['south-asia'] },
+  { name: 'Financial Express Tech', url: 'https://www.financialexpress.com/industry/technology/feed/',                                             topics: ['Technology'],                                                  tier: 2, regions: ['south-asia'] },
 
   // Finance / Stocks & Investments
   { name: 'MarketWatch',            url: 'https://feeds.marketwatch.com/marketwatch/topstories/',                                                 topics: ['Finance', 'Stocks & Investments'],                             tier: 2, regions: ['north-america'] },

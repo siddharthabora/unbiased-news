@@ -14,6 +14,7 @@
 /coverage
 /app/api/test-email
 /app/api/test-carousel
+/app/api/test-regional
 
 # dev tooling
 CLAUDE.md
