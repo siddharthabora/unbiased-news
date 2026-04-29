@@ -191,15 +191,19 @@ const RSS_FEEDS: FeedEntry[] = [
   // ─── TIER 2 ────────────────────────────────────────────────────────────────
 
   // Geopolitics / World — regional & international press
-  { name: 'Deutsche Welle',         url: 'https://rss.dw.com/rdf/rss-en-all',                                                                    topics: ['Geopolitics', 'World', 'Science', 'Environment'],              tier: 2, regions: ['europe'] },
+  { name: 'Deutsche Welle',         url: 'https://rss.dw.com/rdf/rss-en-all',                                                                    topics: ['Geopolitics', 'World'],                                        tier: 2, regions: ['europe'] },
   { name: 'France 24',              url: 'https://www.france24.com/en/rss',                                                                       topics: ['Geopolitics', 'World'],                                        tier: 2, regions: ['europe', 'middle-east'] },
   { name: 'Foreign Policy',         url: 'https://foreignpolicy.com/feed/',                                                                       topics: ['Geopolitics', 'World'],                                        tier: 2, regions: [] },
-  { name: 'Channel NewsAsia',       url: 'https://www.channelnewsasia.com/api/v1/rss-outbound-feed?_format=xml',                                  topics: ['Geopolitics', 'World', 'Technology', 'Finance'],              tier: 2, regions: ['southeast-asia'] },
+  { name: 'Channel NewsAsia',       url: 'https://www.channelnewsasia.com/api/v1/rss-outbound-feed?_format=xml',                                  topics: ['Geopolitics', 'World'],                                        tier: 2, regions: ['southeast-asia'] },
+  { name: 'CNA Business',           url: 'https://www.channelnewsasia.com/api/v1/rss-outbound-feed?_format=xml&category=6936',                    topics: ['Finance', 'Stocks & Investments'],                             tier: 2, regions: ['southeast-asia'] },
   { name: 'Straits Times',          url: 'https://www.straitstimes.com/news/world/rss.xml',                                                       topics: ['Geopolitics', 'World'],                                        tier: 2, regions: ['southeast-asia'] },
-  { name: 'South China Morning Post', url: 'https://www.scmp.com/rss/4/feed',                                                                    topics: ['Geopolitics', 'World', 'Technology', 'Finance', 'Stocks & Investments'], tier: 2, regions: ['east-asia'] },
+  { name: 'Business Times SG Tech', url: 'https://www.businesstimes.com.sg/rss/technology',                                                       topics: ['Technology'],                                                  tier: 2, regions: ['southeast-asia'] },
+  { name: 'Business Times SG Finance', url: 'https://www.businesstimes.com.sg/rss/banking-finance',                                               topics: ['Finance', 'Stocks & Investments'],                             tier: 2, regions: ['southeast-asia'] },
+  { name: 'Rest of World',          url: 'https://restofworld.org/feed/latest/',                                                                   topics: ['Technology'],                                                  tier: 2, regions: [] },
+  { name: 'South China Morning Post', url: 'https://www.scmp.com/rss/4/feed',                                                                    topics: ['Geopolitics', 'World'],                                        tier: 2, regions: ['east-asia'] },
   { name: 'The Hindu',              url: 'https://www.thehindu.com/news/international/feeder/default.rss',                                        topics: ['Geopolitics', 'World'],                                        tier: 2, regions: ['south-asia'] },
-  { name: 'ABC Australia',          url: 'https://www.abc.net.au/news/feed/51120/rss.xml',                                                        topics: ['Geopolitics', 'World', 'Science', 'Environment', 'Health & Wellness'], tier: 2, regions: ['oceania'] },
-  { name: 'Arab News',              url: 'https://www.arabnews.com/rss.xml',                                                                      topics: ['Geopolitics', 'World', 'Finance'],                             tier: 2, regions: ['middle-east'] },
+  { name: 'ABC Australia',          url: 'https://www.abc.net.au/news/feed/51120/rss.xml',                                                        topics: ['Geopolitics', 'World'],                                        tier: 2, regions: ['oceania'] },
+  { name: 'Arab News',              url: 'https://www.arabnews.com/rss.xml',                                                                      topics: ['Geopolitics', 'World'],                                        tier: 2, regions: ['middle-east'] },
 
   // War & Conflict
   { name: 'Bellingcat',             url: 'https://www.bellingcat.com/feed/',                                                                      topics: ['War & Conflict', 'Geopolitics'],                               tier: 2, regions: [] },
@@ -221,7 +225,7 @@ const RSS_FEEDS: FeedEntry[] = [
   // Finance / Stocks & Investments
   { name: 'MarketWatch',            url: 'https://feeds.marketwatch.com/marketwatch/topstories/',                                                 topics: ['Finance', 'Stocks & Investments'],                             tier: 2, regions: ['north-america'] },
   { name: 'Business Insider',       url: 'https://feeds.businessinsider.com/custom/all',                                                          topics: ['Finance', 'Stocks & Investments'],                             tier: 2, regions: ['north-america'] },
-  { name: 'Sydney Morning Herald',  url: 'https://www.smh.com.au/rss/world.xml',                                                                  topics: ['Finance', 'World'],                                            tier: 2, regions: ['oceania'] },
+  { name: 'Sydney Morning Herald',  url: 'https://www.smh.com.au/rss/world.xml',                                                                  topics: ['Geopolitics', 'World'],                                        tier: 2, regions: ['oceania'] },
   { name: 'Australian Financial Review', url: 'https://www.afr.com/rss/world.xml',                                                               topics: ['Finance', 'Stocks & Investments'],                             tier: 2, regions: ['oceania'] },
   { name: 'Motley Fool',            url: 'https://www.fool.com/feeds/index.aspx',                                                                 topics: ['Stocks & Investments'],                                        tier: 2, regions: ['north-america'] },
 
