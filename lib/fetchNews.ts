@@ -229,6 +229,7 @@ const RSS_FEEDS: FeedEntry[] = [
   { name: 'Business Insider',       url: 'https://feeds.businessinsider.com/custom/all',                                                          topics: ['Finance', 'Stocks & Investments'],                             tier: 2, regions: ['north-america'] },
   { name: 'Sydney Morning Herald',  url: 'https://www.smh.com.au/rss/world.xml',                                                                  topics: ['Geopolitics', 'World'],                                        tier: 2, regions: ['oceania'] },
   { name: 'Australian Financial Review', url: 'https://www.afr.com/rss/world.xml',                                                               topics: ['Finance', 'Stocks & Investments'],                             tier: 2, regions: ['oceania'] },
+  { name: 'iTnews',                    url: 'https://www.itnews.com.au/rss/rss.ashx',                                                               topics: ['Technology'],                                                  tier: 2, regions: ['oceania'] },
   { name: 'Motley Fool',            url: 'https://www.fool.com/feeds/index.aspx',                                                                 topics: ['Stocks & Investments'],                                        tier: 2, regions: ['north-america'] },
 
   // Crypto & Web3
