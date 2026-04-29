@@ -212,6 +212,8 @@ const RSS_FEEDS: FeedEntry[] = [
   { name: 'Task & Purpose',         url: 'https://taskandpurpose.com/feed/',                                                                      topics: ['War & Conflict'],                                              tier: 2, regions: ['north-america'] },
 
   // Technology
+  { name: 'Tech.eu',                url: 'https://tech.eu/feed/',                                                                                 topics: ['Technology'],                                                  tier: 2, regions: ['europe'] },
+  { name: 'Sifted',                 url: 'https://sifted.eu/feed',                                                                                topics: ['Technology'],                                                  tier: 2, regions: ['europe'] },
   { name: 'MIT Technology Review',  url: 'https://www.technologyreview.com/feed/',                                                                topics: ['Technology'],                                                  tier: 2, regions: ['north-america'] },
   { name: 'The Verge',              url: 'https://www.theverge.com/rss/index.xml',                                                                topics: ['Technology'],                                                  tier: 2, regions: ['north-america'] },
   { name: 'IEEE Spectrum',          url: 'https://spectrum.ieee.org/feeds/feed.rss',                                                              topics: ['Technology', 'Science'],                                       tier: 2, regions: [] },
@@ -253,6 +255,8 @@ const RSS_FEEDS: FeedEntry[] = [
   // Science / Environment
   { name: 'New Scientist',          url: 'https://www.newscientist.com/feed/home/',                                                               topics: ['Science', 'Environment'],                                      tier: 2, regions: ['europe'] },
   { name: 'Scientific American',    url: 'https://www.scientificamerican.com/platform/syndication/rss/',                                          topics: ['Science', 'Environment'],                                      tier: 2, regions: ['north-america'] },
+  { name: 'Science News',           url: 'https://www.sciencenews.org/feed',                                                                      topics: ['Science'],                                                     tier: 2, regions: [] },
+  { name: 'Quanta Magazine',        url: 'https://www.quantamagazine.org/feed/',                                                                  topics: ['Science'],                                                     tier: 2, regions: [] },
   { name: 'Grist',                  url: 'https://grist.org/feed/',                                                                               topics: ['Environment'],                                                 tier: 2, regions: ['north-america'] },
   { name: 'Mongabay',               url: 'https://news.mongabay.com/feed/',                                                                       topics: ['Environment', 'Science'],                                      tier: 2, regions: [] },
 
