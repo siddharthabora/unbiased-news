@@ -11,6 +11,14 @@ type CustomItem = {
   'content:encoded'?: string
 }
 
+type FeedEntry = {
+  name: string
+  url: string
+  topics: string[]
+  tier: 1 | 2
+  regions: string[]  // IANA region keys; empty array = global (no regional preference)
+}
+
 const parser = new Parser<Record<string, unknown>, CustomItem>({
   customFields: {
     item: [
@@ -105,82 +113,151 @@ function expandTopicsFromContent(title: string, summary: string, baseTopics: str
   return Array.from(expanded)
 }
 
-const RSS_FEEDS = [
+const RSS_FEEDS: FeedEntry[] = [
+
+  // ─── TIER 1 ────────────────────────────────────────────────────────────────
+
   // Geopolitics / World
-  { name: 'Al Jazeera',        url: 'https://www.aljazeera.com/xml/rss/all.xml',                          topics: ['Geopolitics', 'World'] },
-  { name: 'The Diplomat',      url: 'https://thediplomat.com/feed/',                                      topics: ['Geopolitics', 'World'] },
-  { name: 'The Guardian World',url: 'https://www.theguardian.com/world/rss',                              topics: ['Geopolitics', 'World'] },
-  { name: 'NPR',               url: 'https://feeds.npr.org/1001/rss.xml',                                 topics: ['Geopolitics', 'World'] },
+  { name: 'Al Jazeera',             url: 'https://www.aljazeera.com/xml/rss/all.xml',                                                             topics: ['Geopolitics', 'World'],                                        tier: 1, regions: ['middle-east'] },
+  { name: 'The Diplomat',           url: 'https://thediplomat.com/feed/',                                                                         topics: ['Geopolitics', 'World'],                                        tier: 1, regions: ['east-asia', 'southeast-asia'] },
+  { name: 'The Guardian World',     url: 'https://www.theguardian.com/world/rss',                                                                  topics: ['Geopolitics', 'World'],                                        tier: 1, regions: ['europe'] },
+  { name: 'NPR',                    url: 'https://feeds.npr.org/1001/rss.xml',                                                                     topics: ['Geopolitics', 'World'],                                        tier: 1, regions: ['north-america'] },
 
   // Finance / Business
-  { name: 'The Guardian Business', url: 'https://www.theguardian.com/uk/business/rss',                   topics: ['Finance', 'Business'] },
-  { name: 'BBC Business',      url: 'https://feeds.bbci.co.uk/news/business/rss.xml',                    topics: ['Finance', 'Business'] },
+  { name: 'The Guardian Business',  url: 'https://www.theguardian.com/uk/business/rss',                                                           topics: ['Finance', 'Business'],                                         tier: 1, regions: ['europe'] },
+  { name: 'BBC Business',           url: 'https://feeds.bbci.co.uk/news/business/rss.xml',                                                        topics: ['Finance', 'Business'],                                         tier: 1, regions: ['europe'] },
 
   // Technology
-  { name: 'TechCrunch',        url: 'https://techcrunch.com/feed/',                                      topics: ['Technology'] },
-  { name: 'TechCrunch AI',     url: 'https://techcrunch.com/category/artificial-intelligence/feed/',     topics: ['Technology'] },
-  { name: 'Ars Technica',      url: 'https://feeds.arstechnica.com/arstechnica/index',                   topics: ['Technology'] },
-  { name: 'Wired',             url: 'https://www.wired.com/feed/rss',                                    topics: ['Technology'] },
-  { name: 'BBC Technology',    url: 'https://feeds.bbci.co.uk/news/technology/rss.xml',                  topics: ['Technology'] },
-  { name: 'The Guardian Tech', url: 'https://www.theguardian.com/uk/technology/rss',                     topics: ['Technology'] },
+  { name: 'TechCrunch',             url: 'https://techcrunch.com/feed/',                                                                          topics: ['Technology'],                                                  tier: 1, regions: ['north-america'] },
+  { name: 'TechCrunch AI',          url: 'https://techcrunch.com/category/artificial-intelligence/feed/',                                         topics: ['Technology'],                                                  tier: 1, regions: ['north-america'] },
+  { name: 'Ars Technica',           url: 'https://feeds.arstechnica.com/arstechnica/index',                                                       topics: ['Technology'],                                                  tier: 1, regions: ['north-america'] },
+  { name: 'Wired',                  url: 'https://www.wired.com/feed/rss',                                                                        topics: ['Technology'],                                                  tier: 1, regions: ['north-america'] },
+  { name: 'BBC Technology',         url: 'https://feeds.bbci.co.uk/news/technology/rss.xml',                                                      topics: ['Technology'],                                                  tier: 1, regions: ['europe'] },
+  { name: 'The Guardian Tech',      url: 'https://www.theguardian.com/uk/technology/rss',                                                         topics: ['Technology'],                                                  tier: 1, regions: ['europe'] },
 
   // Health & Wellness
-  { name: 'BBC Health',        url: 'https://feeds.bbci.co.uk/news/health/rss.xml',                      topics: ['Health & Wellness'] },
-  { name: 'The Guardian Health', url: 'https://www.theguardian.com/society/health/rss',                  topics: ['Health & Wellness'] },
-  { name: 'Science Daily Health', url: 'https://www.sciencedaily.com/rss/top/health.xml',               topics: ['Health & Wellness'] },
-  { name: 'Healthline',        url: 'https://www.healthline.com/rss/health-news',                        topics: ['Health & Wellness'] },
+  { name: 'BBC Health',             url: 'https://feeds.bbci.co.uk/news/health/rss.xml',                                                          topics: ['Health & Wellness'],                                           tier: 1, regions: ['europe'] },
+  { name: 'The Guardian Health',    url: 'https://www.theguardian.com/society/health/rss',                                                        topics: ['Health & Wellness'],                                           tier: 1, regions: ['europe'] },
+  { name: 'Science Daily Health',   url: 'https://www.sciencedaily.com/rss/top/health.xml',                                                       topics: ['Health & Wellness'],                                           tier: 1, regions: ['north-america'] },
+  { name: 'Healthline',             url: 'https://www.healthline.com/rss/health-news',                                                            topics: ['Health & Wellness'],                                           tier: 1, regions: ['north-america'] },
 
   // Music / Culture / Entertainment
-  { name: 'Rolling Stone',        url: 'https://www.rollingstone.com/music/feed/',                       topics: ['Music', 'Culture', 'Entertainment'] },
-  { name: 'NME',                  url: 'https://www.nme.com/news/music/feed',                            topics: ['Music', 'Culture'] },
-  { name: 'Pitchfork',            url: 'https://pitchfork.com/feed/feed-news/rss',                       topics: ['Music', 'Culture'] },
-  { name: 'Consequence Sound',    url: 'https://consequence.net/category/music/feed',                    topics: ['Music', 'Culture'] },
-  { name: 'Variety',              url: 'https://variety.com/feed/',                                      topics: ['Culture', 'Entertainment'] },
-  { name: 'IndieWire',            url: 'https://www.indiewire.com/feed/',                                topics: ['Culture', 'Entertainment'] },
-  { name: 'BBC Entertainment',    url: 'https://feeds.bbci.co.uk/news/entertainment_and_arts/rss.xml',  topics: ['Music', 'Culture', 'Entertainment'] },
-  { name: 'The Guardian Culture', url: 'https://www.theguardian.com/culture/rss',                       topics: ['Culture', 'Entertainment'] },
+  { name: 'Rolling Stone',          url: 'https://www.rollingstone.com/music/feed/',                                                              topics: ['Music', 'Culture', 'Entertainment'],                           tier: 1, regions: ['north-america'] },
+  { name: 'NME',                    url: 'https://www.nme.com/news/music/feed',                                                                   topics: ['Music', 'Culture'],                                            tier: 1, regions: ['europe'] },
+  { name: 'Pitchfork',              url: 'https://pitchfork.com/feed/feed-news/rss',                                                              topics: ['Music', 'Culture'],                                            tier: 1, regions: ['north-america'] },
+  { name: 'Consequence Sound',      url: 'https://consequence.net/category/music/feed',                                                           topics: ['Music', 'Culture'],                                            tier: 1, regions: ['north-america'] },
+  { name: 'Variety',                url: 'https://variety.com/feed/',                                                                             topics: ['Culture', 'Entertainment'],                                    tier: 1, regions: ['north-america'] },
+  { name: 'IndieWire',              url: 'https://www.indiewire.com/feed/',                                                                       topics: ['Culture', 'Entertainment'],                                    tier: 1, regions: ['north-america'] },
+  { name: 'BBC Entertainment',      url: 'https://feeds.bbci.co.uk/news/entertainment_and_arts/rss.xml',                                          topics: ['Music', 'Culture', 'Entertainment'],                           tier: 1, regions: ['europe'] },
+  { name: 'The Guardian Culture',   url: 'https://www.theguardian.com/culture/rss',                                                               topics: ['Culture', 'Entertainment'],                                    tier: 1, regions: ['europe'] },
 
   // Science / Environment
-  { name: 'BBC Science',              url: 'https://feeds.bbci.co.uk/news/science_and_environment/rss.xml',    topics: ['Science', 'Environment'] },
-  { name: 'The Guardian Environment', url: 'https://www.theguardian.com/environment/rss',                     topics: ['Environment', 'Science'] },
-  { name: 'Inside Climate News',      url: 'https://insideclimatenews.org/feed/',                             topics: ['Environment'] },
-  { name: 'Carbon Brief',            url: 'https://www.carbonbrief.org/feed/',                               topics: ['Environment', 'Science'] },
-  { name: 'Yale Environment 360',    url: 'https://e360.yale.edu/feed',                                      topics: ['Environment', 'Science'] },
+  { name: 'BBC Science',            url: 'https://feeds.bbci.co.uk/news/science_and_environment/rss.xml',                                         topics: ['Science', 'Environment'],                                      tier: 1, regions: ['europe'] },
+  { name: 'The Guardian Env',       url: 'https://www.theguardian.com/environment/rss',                                                           topics: ['Environment', 'Science'],                                      tier: 1, regions: ['europe'] },
+  { name: 'Inside Climate News',    url: 'https://insideclimatenews.org/feed/',                                                                   topics: ['Environment'],                                                 tier: 1, regions: ['north-america'] },
+  { name: 'Carbon Brief',           url: 'https://www.carbonbrief.org/feed/',                                                                     topics: ['Environment', 'Science'],                                      tier: 1, regions: ['europe'] },
+  { name: 'Yale Environment 360',   url: 'https://e360.yale.edu/feed.xml',                                                                        topics: ['Environment', 'Science'],                                      tier: 1, regions: ['north-america'] },
 
   // Crypto & Web3
-  { name: 'CoinDesk',          url: 'https://www.coindesk.com/arc/outboundfeeds/rss/',                  topics: ['Crypto & Web3'] },
-  { name: 'CoinTelegraph',     url: 'https://cointelegraph.com/rss',                                    topics: ['Crypto & Web3'] },
-  { name: 'Decrypt',           url: 'https://decrypt.co/feed',                                          topics: ['Crypto & Web3'] },
+  { name: 'CoinDesk',               url: 'https://www.coindesk.com/arc/outboundfeeds/rss/',                                                       topics: ['Crypto & Web3'],                                               tier: 1, regions: [] },
+  { name: 'CoinTelegraph',          url: 'https://cointelegraph.com/rss',                                                                         topics: ['Crypto & Web3'],                                               tier: 1, regions: [] },
+  { name: 'Decrypt',                url: 'https://decrypt.co/feed',                                                                               topics: ['Crypto & Web3'],                                               tier: 1, regions: [] },
 
-  // Stocks & Investments
-  { name: 'Investing.com',     url: 'https://www.investing.com/rss/news.rss',                           topics: ['Stocks & Investments'] },
-  { name: 'CNBC Markets',      url: 'https://www.cnbc.com/id/10000664/device/rss/rss.html',             topics: ['Stocks & Investments', 'Finance'] },
-  { name: 'Economic Times',    url: 'https://economictimes.indiatimes.com/markets/rss.cms',             topics: ['Stocks & Investments', 'Finance'] },
+  // Stocks & Investments / Finance
+  { name: 'Investing.com',          url: 'https://www.investing.com/rss/news.rss',                                                                topics: ['Stocks & Investments'],                                        tier: 1, regions: [] },
+  { name: 'CNBC Markets',           url: 'https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=10000664',                   topics: ['Stocks & Investments', 'Finance'],                             tier: 1, regions: ['north-america'] },
+  { name: 'Economic Times',         url: 'https://economictimes.indiatimes.com/markets/rss.cms',                                                  topics: ['Stocks & Investments', 'Finance'],                             tier: 1, regions: ['south-asia'] },
 
   // Supply Chain
-  { name: 'Supply Chain Dive', url: 'https://www.supplychaindive.com/feeds/news/',                      topics: ['Supply Chain'] },
-  { name: 'Manufacturing Dive',url: 'https://www.manufacturingdive.com/feeds/news/',                    topics: ['Supply Chain'] },
-  { name: 'FreightWaves',      url: 'https://www.freightwaves.com/news/feed',                           topics: ['Supply Chain'] },
+  { name: 'Supply Chain Dive',      url: 'https://www.supplychaindive.com/feeds/news/',                                                           topics: ['Supply Chain'],                                                tier: 1, regions: ['north-america'] },
+  { name: 'Manufacturing Dive',     url: 'https://www.manufacturingdive.com/feeds/news/',                                                         topics: ['Supply Chain'],                                                tier: 1, regions: ['north-america'] },
+  { name: 'FreightWaves',           url: 'https://www.freightwaves.com/news/feed',                                                                topics: ['Supply Chain'],                                                tier: 1, regions: ['north-america'] },
 
   // War & Conflict
-  { name: 'War on the Rocks',  url: 'https://warontherocks.com/feed/',                                  topics: ['War & Conflict', 'Geopolitics'] },
-  { name: 'Defense One',       url: 'https://www.defenseone.com/rss/all/',                              topics: ['War & Conflict'] },
-  { name: 'Breaking Defense',  url: 'https://breakingdefense.com/feed/',                                topics: ['War & Conflict'] },
+  { name: 'War on the Rocks',       url: 'https://warontherocks.com/feed/',                                                                       topics: ['War & Conflict', 'Geopolitics'],                               tier: 1, regions: ['north-america'] },
+  { name: 'Defense One',            url: 'https://www.defenseone.com/rss/all/',                                                                   topics: ['War & Conflict'],                                              tier: 1, regions: ['north-america'] },
+  { name: 'Breaking Defense',       url: 'https://breakingdefense.com/feed/',                                                                     topics: ['War & Conflict'],                                              tier: 1, regions: ['north-america'] },
 
   // Art
-  { name: 'Artnet News',       url: 'https://news.artnet.com/feed',                                     topics: ['Art', 'Culture'] },
-  { name: 'Hyperallergic',     url: 'https://hyperallergic.com/feed/',                                  topics: ['Art', 'Culture'] },
-  { name: 'The Art Newspaper', url: 'https://www.theartnewspaper.com/rss',                              topics: ['Art'] },
+  { name: 'Artnet News',            url: 'https://news.artnet.com/feed',                                                                          topics: ['Art', 'Culture'],                                              tier: 1, regions: ['north-america'] },
+  { name: 'Hyperallergic',          url: 'https://hyperallergic.com/feed/',                                                                       topics: ['Art', 'Culture'],                                              tier: 1, regions: ['north-america'] },
 
   // Pet Care
-  { name: 'AKC',               url: 'https://www.akc.org/feed/',                                        topics: ['Pet Care'] },
-  { name: 'PetMD',             url: 'https://www.petmd.com/feed',                                       topics: ['Pet Care'] },
-  { name: 'VOSD',              url: 'https://www.vosd.in/blog/feed/',                                   topics: ['Pet Care'] },
-  { name: 'Wild Welfare',      url: 'https://wildwelfare.org/feed/',                                    topics: ['Pet Care'] },
+  { name: 'AKC',                    url: 'https://www.akc.org/feed/',                                                                             topics: ['Pet Care'],                                                    tier: 1, regions: ['north-america'] },
+  { name: 'PetMD',                  url: 'https://www.petmd.com/feed',                                                                            topics: ['Pet Care'],                                                    tier: 1, regions: ['north-america'] },
+  { name: 'VOSD',                   url: 'https://www.vosd.in/blog/feed/',                                                                        topics: ['Pet Care'],                                                    tier: 1, regions: ['south-asia'] },
+  { name: 'Wild Welfare',           url: 'https://wildwelfare.org/feed/',                                                                          topics: ['Pet Care'],                                                    tier: 1, regions: [] },
+
+  // ─── TIER 2 ────────────────────────────────────────────────────────────────
+
+  // Geopolitics / World — regional & international press
+  { name: 'Deutsche Welle',         url: 'https://rss.dw.com/rdf/rss-en-all',                                                                    topics: ['Geopolitics', 'World', 'Science', 'Environment'],              tier: 2, regions: ['europe'] },
+  { name: 'France 24',              url: 'https://www.france24.com/en/rss',                                                                       topics: ['Geopolitics', 'World'],                                        tier: 2, regions: ['europe', 'middle-east'] },
+  { name: 'Foreign Policy',         url: 'https://foreignpolicy.com/feed/',                                                                       topics: ['Geopolitics', 'World'],                                        tier: 2, regions: [] },
+  { name: 'Channel NewsAsia',       url: 'https://www.channelnewsasia.com/api/v1/rss-outbound-feed?_format=xml',                                  topics: ['Geopolitics', 'World', 'Technology', 'Finance'],              tier: 2, regions: ['southeast-asia'] },
+  { name: 'Straits Times',          url: 'https://www.straitstimes.com/news/world/rss.xml',                                                       topics: ['Geopolitics', 'World'],                                        tier: 2, regions: ['southeast-asia'] },
+  { name: 'South China Morning Post', url: 'https://www.scmp.com/rss/4/feed',                                                                    topics: ['Geopolitics', 'World', 'Technology', 'Finance', 'Stocks & Investments'], tier: 2, regions: ['east-asia'] },
+  { name: 'The Hindu',              url: 'https://www.thehindu.com/news/international/feeder/default.rss',                                        topics: ['Geopolitics', 'World'],                                        tier: 2, regions: ['south-asia'] },
+  { name: 'ABC Australia',          url: 'https://www.abc.net.au/news/feed/51120/rss.xml',                                                        topics: ['Geopolitics', 'World', 'Science', 'Environment', 'Health & Wellness'], tier: 2, regions: ['oceania'] },
+  { name: 'Arab News',              url: 'https://www.arabnews.com/rss.xml',                                                                      topics: ['Geopolitics', 'World', 'Finance'],                             tier: 2, regions: ['middle-east'] },
+
+  // War & Conflict
+  { name: 'Bellingcat',             url: 'https://www.bellingcat.com/feed/',                                                                      topics: ['War & Conflict', 'Geopolitics'],                               tier: 2, regions: [] },
+  { name: 'ISW',                    url: 'https://www.understandingwar.org/feeds/all',                                                            topics: ['War & Conflict', 'Geopolitics'],                               tier: 2, regions: [] },
+  { name: 'Military Times',         url: 'https://www.militarytimes.com/arc/outboundfeeds/rss/?outputType=xml',                                   topics: ['War & Conflict'],                                              tier: 2, regions: ['north-america'] },
+  { name: 'Task & Purpose',         url: 'https://taskandpurpose.com/feed/',                                                                      topics: ['War & Conflict'],                                              tier: 2, regions: ['north-america'] },
+
+  // Technology
+  { name: 'MIT Technology Review',  url: 'https://www.technologyreview.com/feed/',                                                                topics: ['Technology'],                                                  tier: 2, regions: ['north-america'] },
+  { name: 'The Verge',              url: 'https://www.theverge.com/rss/index.xml',                                                                topics: ['Technology'],                                                  tier: 2, regions: ['north-america'] },
+  { name: 'IEEE Spectrum',          url: 'https://spectrum.ieee.org/feeds/feed.rss',                                                              topics: ['Technology', 'Science'],                                       tier: 2, regions: [] },
+  { name: 'VentureBeat',            url: 'https://venturebeat.com/feed/',                                                                         topics: ['Technology'],                                                  tier: 2, regions: ['north-america'] },
+
+  // Finance / Stocks & Investments
+  { name: 'MarketWatch',            url: 'https://feeds.marketwatch.com/marketwatch/topstories/',                                                 topics: ['Finance', 'Stocks & Investments'],                             tier: 2, regions: ['north-america'] },
+  { name: 'Business Insider',       url: 'https://feeds.businessinsider.com/custom/all',                                                          topics: ['Finance', 'Stocks & Investments'],                             tier: 2, regions: ['north-america'] },
+  { name: 'Sydney Morning Herald',  url: 'https://www.smh.com.au/rss/world.xml',                                                                  topics: ['Finance', 'World'],                                            tier: 2, regions: ['oceania'] },
+  { name: 'Australian Financial Review', url: 'https://www.afr.com/rss/world.xml',                                                               topics: ['Finance', 'Stocks & Investments'],                             tier: 2, regions: ['oceania'] },
+  { name: 'Motley Fool',            url: 'https://www.fool.com/feeds/index.aspx',                                                                 topics: ['Stocks & Investments'],                                        tier: 2, regions: ['north-america'] },
+
+  // Crypto & Web3
+  { name: 'The Block',              url: 'https://www.theblockcrypto.com/rss.xml',                                                                topics: ['Crypto & Web3'],                                               tier: 2, regions: [] },
+  { name: 'Blockworks',             url: 'https://blockworks.co/feed',                                                                            topics: ['Crypto & Web3'],                                               tier: 2, regions: [] },
+  { name: 'Bitcoin Magazine',       url: 'https://bitcoinmagazine.com/.rss/full/',                                                                topics: ['Crypto & Web3'],                                               tier: 2, regions: [] },
+
+  // Supply Chain
+  { name: 'Trucking Dive',          url: 'https://www.truckingdive.com/feeds/news/',                                                              topics: ['Supply Chain'],                                                tier: 2, regions: ['north-america'] },
+  { name: 'Logistics Management',   url: 'https://www.logisticsmgmt.com/rss',                                                                     topics: ['Supply Chain'],                                                tier: 2, regions: ['north-america'] },
+
+  // Health & Wellness
+  { name: 'STAT News',              url: 'https://www.statnews.com/feed/',                                                                        topics: ['Health & Wellness'],                                           tier: 2, regions: ['north-america'] },
+  { name: 'KFF Health News',        url: 'https://kffhealthnews.org/feed/',                                                                       topics: ['Health & Wellness'],                                           tier: 2, regions: ['north-america'] },
+  { name: 'MedPage Today',          url: 'https://www.medpagetoday.com/rss/headlines.xml',                                                        topics: ['Health & Wellness'],                                           tier: 2, regions: ['north-america'] },
+  { name: 'The Hindu Health',       url: 'https://www.thehindu.com/sci-tech/health/feeder/default.rss',                                           topics: ['Health & Wellness'],                                           tier: 2, regions: ['south-asia'] },
+
+  // Entertainment / Music / Culture
+  { name: 'Deadline',               url: 'https://deadline.com/feed/',                                                                            topics: ['Entertainment', 'Culture'],                                    tier: 2, regions: ['north-america'] },
+  { name: 'Billboard',              url: 'https://www.billboard.com/feed/',                                                                       topics: ['Music', 'Entertainment'],                                      tier: 2, regions: ['north-america'] },
+  { name: 'The Hollywood Reporter', url: 'https://www.hollywoodreporter.com/feed/',                                                               topics: ['Entertainment', 'Culture'],                                    tier: 2, regions: ['north-america'] },
+  { name: 'Stereogum',              url: 'https://www.stereogum.com/feed/',                                                                       topics: ['Music', 'Culture'],                                            tier: 2, regions: ['north-america'] },
+
+  // Science / Environment
+  { name: 'New Scientist',          url: 'https://www.newscientist.com/feed/home/',                                                               topics: ['Science', 'Environment'],                                      tier: 2, regions: ['europe'] },
+  { name: 'Scientific American',    url: 'https://www.scientificamerican.com/platform/syndication/rss/',                                          topics: ['Science', 'Environment'],                                      tier: 2, regions: ['north-america'] },
+  { name: 'Grist',                  url: 'https://grist.org/feed/',                                                                               topics: ['Environment'],                                                 tier: 2, regions: ['north-america'] },
+  { name: 'Mongabay',               url: 'https://news.mongabay.com/feed/',                                                                       topics: ['Environment', 'Science'],                                      tier: 2, regions: [] },
+
+  // Art
+  { name: 'Dezeen',                 url: 'https://feeds.feedburner.com/Dezeen',                                                                   topics: ['Art', 'Culture'],                                              tier: 2, regions: ['europe'] },
+  { name: 'Colossal',               url: 'https://www.thisiscolossal.com/feed/',                                                                  topics: ['Art', 'Culture'],                                              tier: 2, regions: ['north-america'] },
+
+  // Pet Care
+  { name: 'Whole Dog Journal',      url: 'https://www.whole-dog-journal.com/feed/',                                                               topics: ['Pet Care'],                                                    tier: 2, regions: ['north-america'] },
+  { name: 'Dogster',                url: 'https://www.dogster.com/feed',                                                                          topics: ['Pet Care'],                                                    tier: 2, regions: ['north-america'] },
 ]
 
 // Sources without RSS — fetched via Jina AI Reader (free web-to-text service)
-const JINA_SOURCES: { name: string; url: string; topics: string[] }[] = []
+const JINA_SOURCES: FeedEntry[] = []
 
 const MAX_PER_SOURCE = 4
 
@@ -192,9 +269,11 @@ export interface NewsItem {
   publishedAt: string
   imageUrl?: string
   feedTopics: string[]
+  tier: 1 | 2
+  regions: string[]
 }
 
-async function scrapeWithJina(source: { name: string; url: string; topics: string[] }): Promise<NewsItem[]> {
+async function scrapeWithJina(source: FeedEntry): Promise<NewsItem[]> {
   try {
     const res = await fetch(`https://r.jina.ai/${source.url}`, {
       headers: { Accept: 'text/plain' },
@@ -203,7 +282,6 @@ async function scrapeWithJina(source: { name: string; url: string; topics: strin
     if (!res.ok) return []
     const text = await res.text()
 
-    // Extract markdown links: [Article Title](https://...)
     const linkPattern = /\[([^\]]{25,200})\]\((https?:\/\/[^)]+)\)/g
     const articles: NewsItem[] = []
     const seen = new Set<string>()
@@ -221,6 +299,8 @@ async function scrapeWithJina(source: { name: string; url: string; topics: strin
         source: source.name,
         publishedAt: new Date().toISOString(),
         feedTopics: source.topics,
+        tier: source.tier,
+        regions: source.regions,
       })
     }
 
@@ -245,8 +325,14 @@ export async function fetchAllNews(): Promise<NewsItem[]> {
           link: item.link,
           source: feed.name,
           publishedAt: item.pubDate ?? '',
-          imageUrl: item['media:content']?.$.url ?? item['media:thumbnail']?.$.url ?? item.enclosure?.url ?? (item['content:encoded'] ? extractFirstImage(item['content:encoded']) : undefined),
+          imageUrl:
+            item['media:content']?.$.url ??
+            item['media:thumbnail']?.$.url ??
+            item.enclosure?.url ??
+            (item['content:encoded'] ? extractFirstImage(item['content:encoded']) : undefined),
           feedTopics: expandTopicsFromContent(item.title, item.contentSnippet ?? '', feed.topics),
+          tier: feed.tier,
+          regions: feed.regions,
         })
       }
     }),
@@ -257,7 +343,7 @@ export async function fetchAllNews(): Promise<NewsItem[]> {
     }),
   ])
 
-  // Deduplicate by URL — same story from two feeds should only appear once
+  // Deduplicate by URL
   const seenUrls = new Set<string>()
   const deduped = rawResults.filter(item => {
     if (seenUrls.has(item.link)) return false
@@ -265,7 +351,7 @@ export async function fetchAllNews(): Promise<NewsItem[]> {
     return true
   })
 
-  // Secondary cap: max MAX_PER_SOURCE articles per source name
+  // Cap at MAX_PER_SOURCE articles per source name
   const countBySource: Record<string, number> = {}
   const results: NewsItem[] = []
   for (const item of deduped) {

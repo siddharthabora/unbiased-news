@@ -50,7 +50,7 @@ export async function GET(request: Request) {
   const results = await Promise.allSettled(
     eligible.map(async (subscriber) => {
       const topics: string[] = subscriber.topics ?? []
-      const digest = await selectAndSummarize(allNews, topics)
+      const digest = await selectAndSummarize(allNews, topics, subscriber.timezone)
       if (digest.length === 0) return { email: subscriber.email, articles: 0, status: 'skipped' }
       await sendDigestEmail(subscriber.email, topics, digest)
       return { email: subscriber.email, articles: digest.length }

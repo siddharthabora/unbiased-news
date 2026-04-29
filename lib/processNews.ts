@@ -1,7 +1,11 @@
 import OpenAI from 'openai'
 import { NewsItem } from './fetchNews'
+import { getRegionPriorityList } from './regionMap'
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+
+// 60% of each topic's slots target regional sources; remainder filled from global.
+const REGIONAL_RATIO = 0.6
 
 export interface BiasAxis {
   left_pct: number
@@ -43,10 +47,41 @@ export interface ProcessedNewsItem {
   headlineAccuracy: string
 }
 
-// Step 1: cheap call — select the best articles for a single topic
-async function selectRelevantIndices(news: NewsItem[], topic: string, maxCount: number): Promise<number[]> {
+// Returns true if the article's source has any region overlapping the subscriber's priority list.
+// Sources with empty regions [] are global — never count as regional.
+function isRegionalSource(item: NewsItem, regionPriorityList: string[]): boolean {
+  if (item.regions.length === 0 || regionPriorityList.length === 0) return false
+  return item.regions.some(r => regionPriorityList.includes(r))
+}
+
+// Sorts a pool so regional articles come first, with Tier 1 prioritised over Tier 2 within each group.
+// Order: regional Tier 1 → regional Tier 2 → global Tier 1 → global Tier 2
+function sortByRegionalPriority(pool: NewsItem[], regionPriorityList: string[]): NewsItem[] {
+  return [...pool].sort((a, b) => {
+    const aReg = isRegionalSource(a, regionPriorityList)
+    const bReg = isRegionalSource(b, regionPriorityList)
+    if (aReg !== bReg) return aReg ? -1 : 1
+    return a.tier - b.tier
+  })
+}
+
+// Step 1: cheap GPT call — select the best articles for a single topic.
+// Articles are labelled [R] (regional) or [G] (global) in the prompt so the model
+// can respect the 60:40 target while still prioritising relevance.
+async function selectRelevantIndices(
+  news: NewsItem[],
+  topic: string,
+  maxCount: number,
+  regionPriorityList: string[]
+): Promise<number[]> {
+  const regionalTarget = Math.round(maxCount * REGIONAL_RATIO)
+  const globalTarget = maxCount - regionalTarget
+
   const articlesText = news
-    .map((item, i) => `[${i}] [${item.source}] ${item.title}`)
+    .map((item, i) => {
+      const label = isRegionalSource(item, regionPriorityList) ? 'R' : 'G'
+      return `[${i}] [${label}] [${item.source}] ${item.title}`
+    })
     .join('\n')
 
   const response = await openai.chat.completions.create({
@@ -60,6 +95,10 @@ async function selectRelevantIndices(news: NewsItem[], topic: string, maxCount: 
       {
         role: 'user',
         content: `Select up to ${maxCount} articles that DIRECTLY cover the topic: "${topic}".
+
+Articles are labelled [R] (regional — from the subscriber's geographic area) or [G] (global).
+Target mix: ~${regionalTarget} from [R] sources and ~${globalTarget} from [G] sources.
+If fewer than ${regionalTarget} relevant [R] articles exist, fill remaining slots from [G] — never leave slots empty to preserve the ratio.
 
 SELECTION RULES:
 1. Only include an article if it directly and specifically covers "${topic}". A clear, traceable connection is required — not vague thematic overlap.
@@ -82,7 +121,7 @@ Respond ONLY with a JSON array of integers (article indices), e.g. [3, 7] or []`
   return indices.slice(0, maxCount)
 }
 
-// Step 2: deep analysis call — full authenticity + bias + newsletter summary for the selected 10
+// Step 2: deep analysis call — full authenticity + bias + newsletter summary for selected articles.
 async function analyzeArticles(articles: NewsItem[]): Promise<ProcessedNewsItem[]> {
   const articlesInput = articles
     .map(
@@ -217,26 +256,34 @@ ${articlesInput}`,
 
 export async function selectAndSummarize(
   news: NewsItem[],
-  topics: string[]
+  topics: string[],
+  timezone?: string
 ): Promise<ProcessedNewsItem[]> {
+  // Derive the subscriber's region priority list from their saved timezone.
+  // Empty list = unknown timezone → all sources treated as global pool.
+  const regionPriorityList = getRegionPriorityList(timezone ?? '')
+
   const usedUrls = new Set<string>()
   const allSelected: NewsItem[] = []
 
   // Distribute 14 slots evenly across topics, minimum 2 per topic
   const perTopic = Math.max(2, Math.ceil(14 / topics.length))
 
-  // Select articles per topic independently — guarantees every topic gets coverage
   await Promise.allSettled(
     topics.map(async (topic) => {
-      // Only articles tagged for this specific topic
+      // Only articles tagged for this topic that haven't been used yet
       const pool = news.filter(
         item => !usedUrls.has(item.link) && item.feedTopics.includes(topic)
       )
-      if (pool.length === 0) return // No articles for this topic — skip, do not pad
+      if (pool.length === 0) return
 
-      const indices = await selectRelevantIndices(pool, topic, perTopic)
+      // Sort pool: regional Tier 1 → regional Tier 2 → global Tier 1 → global Tier 2.
+      // This ordering biases GPT toward regional sources without hard-excluding global ones.
+      const sorted = sortByRegionalPriority(pool, regionPriorityList)
+
+      const indices = await selectRelevantIndices(sorted, topic, perTopic, regionPriorityList)
       for (const i of indices) {
-        const item = pool[i]
+        const item = sorted[i]
         if (item && !usedUrls.has(item.link)) {
           usedUrls.add(item.link)
           allSelected.push(item)
