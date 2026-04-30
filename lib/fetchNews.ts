@@ -230,6 +230,7 @@ const RSS_FEEDS: FeedEntry[] = [
   { name: 'Sydney Morning Herald',  url: 'https://www.smh.com.au/rss/world.xml',                                                                  topics: ['Geopolitics', 'World'],                                        tier: 2, regions: ['oceania'] },
   { name: 'Australian Financial Review', url: 'https://www.afr.com/rss/world.xml',                                                               topics: ['Finance', 'Stocks & Investments'],                             tier: 2, regions: ['oceania'] },
   { name: 'iTnews',                    url: 'https://www.itnews.com.au/rss/rss.ashx',                                                               topics: ['Technology'],                                                  tier: 2, regions: ['oceania'] },
+  { name: 'The East African',        url: 'https://www.theeastafrican.co.ke/rss.xml',                                                              topics: ['Geopolitics', 'World'],                                        tier: 2, regions: ['east-africa'] },
   { name: 'Motley Fool',            url: 'https://www.fool.com/feeds/index.aspx',                                                                 topics: ['Stocks & Investments'],                                        tier: 2, regions: ['north-america'] },
 
   // Crypto & Web3
@@ -330,7 +331,15 @@ export async function fetchAllNews(): Promise<NewsItem[]> {
   await Promise.allSettled([
     // RSS feeds
     ...RSS_FEEDS.map(async (feed) => {
-      const parsed = await parser.parseURL(feed.url)
+      let parsed: Awaited<ReturnType<typeof parser.parseURL>>
+      try {
+        parsed = await Promise.race([
+          parser.parseURL(feed.url),
+          new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), 15000)),
+        ])
+      } catch {
+        return
+      }
       for (const item of parsed.items.slice(0, MAX_PER_SOURCE)) {
         if (!item.title || !item.link) continue
         rawResults.push({
