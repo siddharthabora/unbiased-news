@@ -54,14 +54,25 @@ function isRegionalSource(item: NewsItem, regionPriorityList: string[]): boolean
   return item.regions.some(r => regionPriorityList.includes(r))
 }
 
+// Returns the best (lowest) priority index of an item's regions within the subscriber's list.
+// Lower index = closer match to the subscriber's primary region.
+function regionPriorityScore(item: NewsItem, regionPriorityList: string[]): number {
+  return item.regions.reduce((best, r) => {
+    const idx = regionPriorityList.indexOf(r)
+    return idx !== -1 && idx < best ? idx : best
+  }, Infinity)
+}
+
 // Sorts a pool so regional articles come first, with Tier 1 prioritised over Tier 2 within each group.
-// Order: regional Tier 1 → regional Tier 2 → global Tier 1 → global Tier 2
+// Within the same tier, sources whose region appears earlier in regionPriorityList rank higher.
+// Order: regional Tier 1 (primary region first) → regional Tier 2 (primary region first) → global Tier 1 → global Tier 2
 function sortByRegionalPriority(pool: NewsItem[], regionPriorityList: string[]): NewsItem[] {
   return [...pool].sort((a, b) => {
     const aReg = isRegionalSource(a, regionPriorityList)
     const bReg = isRegionalSource(b, regionPriorityList)
     if (aReg !== bReg) return aReg ? -1 : 1
-    return a.tier - b.tier
+    if (a.tier !== b.tier) return a.tier - b.tier
+    return regionPriorityScore(a, regionPriorityList) - regionPriorityScore(b, regionPriorityList)
   })
 }
 
@@ -264,34 +275,41 @@ export async function selectAndSummarize(
   const regionPriorityList = getRegionPriorityList(timezone ?? '')
 
   const usedUrls = new Set<string>()
-  const allSelected: NewsItem[] = []
 
   // Distribute 14 slots evenly across topics, minimum 2 per topic
   const perTopic = Math.max(2, Math.ceil(14 / topics.length))
 
-  await Promise.allSettled(
+  // Each topic selects then immediately analyzes its articles in parallel with other topics.
+  // This replaces one massive 14-article GPT call with several small parallel calls (~2-3 articles each).
+  const topicResults = await Promise.allSettled(
     topics.map(async (topic) => {
-      // Only articles tagged for this topic that haven't been used yet
       const pool = news.filter(
         item => !usedUrls.has(item.link) && item.feedTopics.includes(topic)
       )
-      if (pool.length === 0) return
+      if (pool.length === 0) return []
 
-      // Sort pool: regional Tier 1 → regional Tier 2 → global Tier 1 → global Tier 2.
-      // This ordering biases GPT toward regional sources without hard-excluding global ones.
       const sorted = sortByRegionalPriority(pool, regionPriorityList)
-
       const indices = await selectRelevantIndices(sorted, topic, perTopic, regionPriorityList)
+
+      const selected: NewsItem[] = []
       for (const i of indices) {
         const item = sorted[i]
         if (item && !usedUrls.has(item.link)) {
           usedUrls.add(item.link)
-          allSelected.push(item)
+          selected.push(item)
         }
       }
+      if (selected.length === 0) return []
+      return analyzeArticles(selected)
     })
   )
 
-  if (allSelected.length === 0) return []
-  return analyzeArticles(allSelected)
+  const allProcessed: ProcessedNewsItem[] = []
+  for (const result of topicResults) {
+    if (result.status === 'fulfilled' && Array.isArray(result.value)) {
+      allProcessed.push(...result.value)
+    }
+  }
+  if (allProcessed.length === 0) return []
+  return allProcessed
 }
