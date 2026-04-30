@@ -1,3 +1,5 @@
+export const maxDuration = 60
+
 import { supabase } from '@/lib/supabase'
 import { fetchAllNews } from '@/lib/fetchNews'
 import { selectAndSummarize } from '@/lib/processNews'
