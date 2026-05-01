@@ -284,7 +284,10 @@ export async function selectAndSummarize(
   const topicResults = await Promise.allSettled(
     topics.map(async (topic) => {
       const pool = news.filter(
-        item => !usedUrls.has(item.link) && item.feedTopics.includes(topic)
+        item =>
+          !usedUrls.has(item.link) &&
+          item.feedTopics.includes(topic) &&
+          (item.summary?.trim().length ?? 0) >= 100
       )
       if (pool.length === 0) return []
 
@@ -292,10 +295,12 @@ export async function selectAndSummarize(
       const indices = await selectRelevantIndices(sorted, topic, perTopic, regionPriorityList)
 
       const selected: NewsItem[] = []
+      const usedSourcesThisTopic = new Set<string>()
       for (const i of indices) {
         const item = sorted[i]
-        if (item && !usedUrls.has(item.link)) {
+        if (item && !usedUrls.has(item.link) && !usedSourcesThisTopic.has(item.source)) {
           usedUrls.add(item.link)
+          usedSourcesThisTopic.add(item.source)
           selected.push(item)
         }
       }
