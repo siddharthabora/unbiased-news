@@ -7,14 +7,21 @@ import { sendDigestEmail } from '@/lib/sendEmail'
 
 function isNineAmInTimezone(timezone: string): boolean {
   try {
+    const now = new Date()
     const hour = parseInt(
       new Intl.DateTimeFormat('en-US', {
         hour: 'numeric',
         hour12: false,
         timeZone: timezone,
-      }).format(new Date())
+      }).format(now)
     )
-    return hour === 9
+    const minute = parseInt(
+      new Intl.DateTimeFormat('en-US', {
+        minute: 'numeric',
+        timeZone: timezone,
+      }).format(now)
+    )
+    return hour === 9 && minute < 30
   } catch {
     return false
   }

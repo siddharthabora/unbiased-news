@@ -59,9 +59,10 @@ const TOPIC_KEYWORD_EXPANSION: Record<string, string[]> = {
     'reshoring', 'nearshoring', 'port congestion', 'shipping lane', 'cargo',
   ],
   'Crypto & Web3': [
-    'bitcoin', 'cryptocurrency', 'crypto', 'blockchain', 'ethereum', 'defi',
-    'nft', 'web3', 'polymarket', 'stablecoin', 'altcoin', 'dao',
+    'bitcoin', 'cryptocurrency', 'crypto', 'blockchain', 'ethereum',
+    'nft', 'web3', 'polymarket', 'stablecoin', 'altcoin',
     'smart contract', 'digital asset', 'digital currency', 'crypto exchange',
+    'decentralized finance',
   ],
   'Geopolitics': [
     'diplomatic', 'geopolitical', 'treaty', 'sovereignty', 'territorial',
@@ -126,6 +127,7 @@ const RSS_FEEDS: FeedEntry[] = [
   // Finance / Business
   { name: 'The Guardian Business',  url: 'https://www.theguardian.com/uk/business/rss',                                                           topics: ['Finance', 'Business'],                                         tier: 1, regions: ['europe'] },
   { name: 'BBC Business',           url: 'https://feeds.bbci.co.uk/news/business/rss.xml',                                                        topics: ['Finance', 'Business'],                                         tier: 1, regions: ['europe'] },
+  { name: 'Fortune',                url: 'https://fortune.com/feed/',                                                                             topics: ['Finance', 'Business'],                                         tier: 1, regions: ['north-america'] },
 
   // Technology
   { name: 'TechCrunch',             url: 'https://techcrunch.com/feed/',                                                                          topics: ['Technology'],                                                  tier: 1, regions: ['north-america'] },
