@@ -27,11 +27,30 @@ function isNineAmInTimezone(timezone: string): boolean {
   }
 }
 
+const DEV_MODE = process.env.DEV_MODE === 'true'
+const DEV_EMAIL = process.env.DEV_EMAIL ?? ''
+
+const ALL_TOPICS = [
+  'Technology', 'Finance', 'Geopolitics', 'Science', 'Health & Wellness',
+  'Environment', 'War & Conflict', 'Crypto & Web3', 'Stocks & Investments',
+  'Business', 'World', 'Supply Chain', 'Art', 'Music', 'Culture', 'Pet Care',
+]
+
 export async function GET(request: Request) {
   // Verify this is called by Vercel cron, not a random visitor
   const authHeader = request.headers.get('authorization')
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return new Response('Unauthorized', { status: 401 })
+  }
+
+  // DEV_MODE: bypass timezone filter, send all topics to DEV_EMAIL only
+  if (DEV_MODE) {
+    if (!DEV_EMAIL) return Response.json({ error: 'DEV_EMAIL env var not set' }, { status: 500 })
+    const allNews = await fetchAllNews()
+    const digest = await selectAndSummarize(allNews, ALL_TOPICS, 'Asia/Kolkata')
+    if (digest.length === 0) return Response.json({ ok: true, dev: true, sent: 0, message: 'No articles found' })
+    await sendDigestEmail(DEV_EMAIL, ALL_TOPICS, digest)
+    return Response.json({ ok: true, dev: true, sent: 1, email: DEV_EMAIL, articles: digest.length })
   }
 
   // Find subscribers whose local time is currently 9am
