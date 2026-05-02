@@ -106,7 +106,11 @@ export default function Home() {
         <div className="text-5xl mb-6 text-white">✓</div>
         <h2 className="text-2xl font-semibold text-white mb-3">You're in.</h2>
         <p className="text-zinc-400 text-base">
-          Your first briefing arrives tomorrow at 9:00 AM.
+          Your first briefing arrives {
+            parseInt(new Intl.DateTimeFormat('en-US', { hour: 'numeric', hour12: false, timeZone: timezone }).format(new Date())) < 9
+              ? 'today'
+              : 'tomorrow'
+          } at 9:00 AM.
         </p>
       </div>
     </div>
