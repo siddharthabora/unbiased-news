@@ -113,7 +113,7 @@ If fewer than ${regionalTarget} relevant [R] articles exist, fill remaining slot
 
 SELECTION RULES:
 1. Only include an article if it directly and specifically covers "${topic}". A clear, traceable connection is required — not vague thematic overlap.
-2. If two or more articles cover the same underlying event, include only the single most substantive one. Never pick the same story twice even from different outlets.
+2. STRICT DEDUPLICATION: If multiple articles share the same core news hook — same negotiation, same military operation, same company/person action, same policy decision — include ONLY the single most substantive one, regardless of outlet. Different outlets covering the same breaking story = same event. When in doubt, exclude.
 3. Do not pick more than 1 article from the same source.
 4. If fewer than ${maxCount} truly relevant articles exist, return fewer — never pad with loosely related content.
 5. If zero articles are relevant, return an empty array [].
@@ -277,7 +277,7 @@ export async function selectAndSummarize(
   const usedUrls = new Set<string>()
 
   // Distribute 14 slots evenly across topics, minimum 2 per topic
-  const perTopic = Math.max(2, Math.ceil(14 / topics.length))
+  const perTopic = Math.min(3, Math.max(2, Math.ceil(14 / topics.length)))
 
   // Each topic selects then immediately analyzes its articles in parallel with other topics.
   // This replaces one massive 14-article GPT call with several small parallel calls (~2-3 articles each).
