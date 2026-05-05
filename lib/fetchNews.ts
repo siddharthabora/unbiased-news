@@ -29,6 +29,10 @@ const parser = new Parser<Record<string, unknown>, CustomItem>({
   },
 })
 
+function stripHtml(text: string): string {
+  return text.replace(/<[^>]*>/g, '').replace(/&[a-z]+;/gi, ' ').replace(/\s+/g, ' ').trim()
+}
+
 function extractFirstImage(html: string): string | undefined {
   const match = html.match(/<img[^>]+src=["']([^"']+)["']/i)
   const url = match?.[1]
@@ -354,7 +358,7 @@ export async function fetchAllNews(): Promise<NewsItem[]> {
         if (!item.title || !item.link) continue
         rawResults.push({
           title: item.title,
-          summary: item.contentSnippet ?? '',
+          summary: stripHtml(item.contentSnippet ?? ''),
           link: item.link,
           source: feed.name,
           publishedAt: item.pubDate ?? '',

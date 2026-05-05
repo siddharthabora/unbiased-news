@@ -287,7 +287,7 @@ export async function selectAndSummarize(
         item =>
           !usedUrls.has(item.link) &&
           item.feedTopics.includes(topic) &&
-          (item.summary?.trim().length ?? 0) >= 100
+          (item.title.length + (item.summary?.trim().length ?? 0)) >= 80
       )
       if (pool.length === 0) return []
 
