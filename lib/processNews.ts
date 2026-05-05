@@ -76,6 +76,13 @@ function sortByRegionalPriority(pool: NewsItem[], regionPriorityList: string[]):
   })
 }
 
+// Richer descriptions for topics where the label alone is too narrow for GPT to interpret correctly.
+const TOPIC_DESCRIPTIONS: Record<string, string> = {
+  'Health & Wellness': 'Health & Wellness — includes medical news, physical fitness, gym/workout routines, yoga, nutrition, diet, gut health, sleep, mental health, psychology, self-improvement, mindfulness, meditation, longevity, and personal wellbeing',
+  'War & Conflict': 'War & Conflict — includes active military operations, airstrikes, ceasefires, armed clashes, insurgencies, and battlefield developments',
+  'Crypto & Web3': 'Crypto & Web3 — includes bitcoin, ethereum, altcoins, blockchain technology, NFTs, stablecoins, DeFi, and crypto exchanges',
+}
+
 // Step 1: cheap GPT call — select the best articles for a single topic.
 // Articles are labelled [R] (regional) or [G] (global) in the prompt so the model
 // can respect the 60:40 target while still prioritising relevance.
@@ -87,6 +94,7 @@ async function selectRelevantIndices(
 ): Promise<number[]> {
   const regionalTarget = Math.round(maxCount * REGIONAL_RATIO)
   const globalTarget = maxCount - regionalTarget
+  const topicDescription = TOPIC_DESCRIPTIONS[topic] ?? topic
 
   const articlesText = news
     .map((item, i) => {
@@ -105,14 +113,14 @@ async function selectRelevantIndices(
       },
       {
         role: 'user',
-        content: `Select up to ${maxCount} articles that DIRECTLY cover the topic: "${topic}".
+        content: `Select up to ${maxCount} articles that DIRECTLY cover the topic: "${topicDescription}".
 
 Articles are labelled [R] (regional — from the subscriber's geographic area) or [G] (global).
 Target mix: ~${regionalTarget} from [R] sources and ~${globalTarget} from [G] sources.
 If fewer than ${regionalTarget} relevant [R] articles exist, fill remaining slots from [G] — never leave slots empty to preserve the ratio.
 
 SELECTION RULES:
-1. Only include an article if it directly and specifically covers "${topic}". A clear, traceable connection is required — not vague thematic overlap.
+1. Only include an article if it directly and specifically covers "${topicDescription}". A clear, traceable connection is required — not vague thematic overlap.
 2. STRICT DEDUPLICATION: If multiple articles share the same core news hook — same negotiation, same military operation, same company/person action, same policy decision — include ONLY the single most substantive one, regardless of outlet. Different outlets covering the same breaking story = same event. When in doubt, exclude.
 3. Do not pick more than 1 article from the same source.
 4. If fewer than ${maxCount} truly relevant articles exist, return fewer — never pad with loosely related content.
