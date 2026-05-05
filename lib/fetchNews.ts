@@ -83,6 +83,10 @@ const TOPIC_KEYWORD_EXPANSION: Record<string, string[]> = {
     'pandemic', 'vaccine', 'clinical trial', 'fda approval', 'mental health',
     'public health', 'disease outbreak', 'pharmaceutical', 'drug approval',
     'nhs', 'mortality rate', 'pathogen', 'healthcare system',
+    'fitness', 'workout', 'exercise', 'yoga', 'meditation', 'mindfulness',
+    'nutrition', 'diet', 'gut health', 'sleep health', 'well-being', 'wellbeing',
+    'morning routine', 'self-care', 'stress relief', 'anxiety', 'depression',
+    'weight loss', 'muscle', 'hydration', 'supplement', 'longevity',
   ],
   'Stocks & Investments': [
     'stock market', 'equity market', 'dividend', 'earnings report',
@@ -142,6 +146,9 @@ const RSS_FEEDS: FeedEntry[] = [
   { name: 'The Guardian Health',    url: 'https://www.theguardian.com/society/health/rss',                                                        topics: ['Health & Wellness'],                                           tier: 1, regions: ['europe'] },
   { name: 'Science Daily Health',   url: 'https://www.sciencedaily.com/rss/top/health.xml',                                                       topics: ['Health & Wellness'],                                           tier: 1, regions: ['north-america'] },
   { name: 'Healthline',             url: 'https://www.healthline.com/rss/health-news',                                                            topics: ['Health & Wellness'],                                           tier: 1, regions: ['north-america'] },
+  { name: 'Mindbodygreen',          url: 'https://www.mindbodygreen.com/rss.xml',                                                                  topics: ['Health & Wellness'],                                           tier: 1, regions: [] },
+  { name: 'Psychology Today',       url: 'https://www.psychologytoday.com/us/front/feed',                                                         topics: ['Health & Wellness'],                                           tier: 1, regions: [] },
+  { name: 'NPR Health',             url: 'https://feeds.npr.org/1128/rss.xml',                                                                    topics: ['Health & Wellness'],                                           tier: 1, regions: ['north-america'] },
 
   // Music / Culture / Entertainment
   { name: 'Rolling Stone',          url: 'https://www.rollingstone.com/music/feed/',                                                              topics: ['Music', 'Culture', 'Entertainment'],                           tier: 1, regions: ['north-america'] },
@@ -249,6 +256,7 @@ const RSS_FEEDS: FeedEntry[] = [
   { name: 'KFF Health News',        url: 'https://kffhealthnews.org/feed/',                                                                       topics: ['Health & Wellness'],                                           tier: 2, regions: ['north-america'] },
   { name: 'MedPage Today',          url: 'https://www.medpagetoday.com/rss/headlines.xml',                                                        topics: ['Health & Wellness'],                                           tier: 2, regions: ['north-america'] },
   { name: 'The Hindu Health',       url: 'https://www.thehindu.com/sci-tech/health/feeder/default.rss',                                           topics: ['Health & Wellness'],                                           tier: 2, regions: ['south-asia'] },
+  { name: 'The Better India Health', url: 'https://thebetterindia.com/topics/health-care/feed/',                                                  topics: ['Health & Wellness'],                                           tier: 2, regions: ['south-asia'] },
 
   // Entertainment / Music / Culture
   { name: 'Deadline',               url: 'https://deadline.com/feed/',                                                                            topics: ['Entertainment', 'Culture'],                                    tier: 2, regions: ['north-america'] },
