@@ -47,7 +47,7 @@ export async function GET(request: Request) {
   if (DEV_MODE) {
     if (!DEV_EMAIL) return Response.json({ error: 'DEV_EMAIL env var not set' }, { status: 500 })
     const allNews = await fetchAllNews()
-    const digest = await selectAndSummarize(allNews, ['Health & Wellness'], 'Asia/Kolkata')
+    const digest = await selectAndSummarize(allNews, ALL_TOPICS, 'Asia/Kolkata')
     if (digest.length === 0) return Response.json({ ok: true, dev: true, sent: 0, message: 'No articles found' })
     await sendDigestEmail(DEV_EMAIL, ALL_TOPICS, digest)
     return Response.json({ ok: true, dev: true, sent: 1, email: DEV_EMAIL, articles: digest.length })
