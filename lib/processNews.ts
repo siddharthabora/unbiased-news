@@ -76,6 +76,35 @@ function sortByRegionalPriority(pool: NewsItem[], regionPriorityList: string[]):
   })
 }
 
+const STOP_WORDS = new Set(['the','a','an','in','of','to','and','for','is','was','on','at','by','as','its','it','with','from','that','this','are','be','has','have','had','will','but','not','or','into'])
+
+function normalizeTitle(title: string): Set<string> {
+  return new Set(
+    title.toLowerCase().replace(/[^a-z0-9 ]/g, ' ').split(/\s+/).filter(w => w.length > 2 && !STOP_WORDS.has(w))
+  )
+}
+
+function titleJaccard(a: string, b: string): number {
+  const wa = normalizeTitle(a)
+  const wb = normalizeTitle(b)
+  if (wa.size === 0 || wb.size === 0) return 0
+  let intersection = 0
+  for (const w of wa) if (wb.has(w)) intersection++
+  return intersection / (wa.size + wb.size - intersection)
+}
+
+// Removes near-duplicate articles (same story, different sources) before GPT selection.
+// Keeps the highest-priority article in each cluster (Tier 1 > Tier 2, regional > global).
+// Threshold 0.45 catches reworded headlines of the same event.
+function deduplicateByTitle(pool: NewsItem[], regionPriorityList: string[]): NewsItem[] {
+  const kept: NewsItem[] = []
+  for (const candidate of pool) {
+    const isDuplicate = kept.some(existing => titleJaccard(candidate.title, existing.title) >= 0.45)
+    if (!isDuplicate) kept.push(candidate)
+  }
+  return kept
+}
+
 // Richer descriptions for topics where the label alone is too narrow for GPT to interpret correctly.
 const TOPIC_DESCRIPTIONS: Record<string, string> = {
   'Health & Wellness': 'Health & Wellness — includes medical news, physical fitness, gym/workout routines, yoga, nutrition, diet, gut health, sleep, mental health, psychology, self-improvement, mindfulness, meditation, longevity, and personal wellbeing',
@@ -300,15 +329,20 @@ export async function selectAndSummarize(
       if (pool.length === 0) return []
 
       const sorted = sortByRegionalPriority(pool, regionPriorityList)
-      const indices = await selectRelevantIndices(sorted, topic, perTopic, regionPriorityList)
+      const deduped = deduplicateByTitle(sorted, regionPriorityList)
+      const indices = await selectRelevantIndices(deduped, topic, perTopic, regionPriorityList)
 
       const selected: NewsItem[] = []
       const usedSourcesThisTopic = new Set<string>()
       for (const i of indices) {
-        const item = sorted[i]
+        const item = deduped[i]
         if (item && !usedUrls.has(item.link) && !usedSourcesThisTopic.has(item.source)) {
           usedUrls.add(item.link)
           usedSourcesThisTopic.add(item.source)
+          // Fix C: prevent GPT hallucination on empty summaries
+          if (!item.summary || item.summary.trim().length < 20) {
+            item.summary = `[No article body available — headline only: ${item.title}]`
+          }
           selected.push(item)
         }
       }
@@ -324,5 +358,14 @@ export async function selectAndSummarize(
     }
   }
   if (allProcessed.length === 0) return []
-  return allProcessed
+
+  // Fix B: cross-topic URL dedup — parallel execution means usedUrls Set above is
+  // always empty when each topic reads it, so the same article can appear in multiple
+  // topic buckets. Deduplicate by URL here, keeping first occurrence.
+  const seenLinks = new Set<string>()
+  return allProcessed.filter(item => {
+    if (seenLinks.has(item.link)) return false
+    seenLinks.add(item.link)
+    return true
+  })
 }
