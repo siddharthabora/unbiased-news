@@ -92,5 +92,9 @@ export async function GET(request: Request) {
   )
 
   console.log('Cron digest run:', JSON.stringify(summary))
-  return Response.json({ ok: true, sent: eligible.length, summary })
+  return Response.json({
+    ok: true,
+    sent: summary.filter(s => s.status === 'sent').length,
+    failed: summary.filter(s => s.status === 'failed').length,
+  })
 }

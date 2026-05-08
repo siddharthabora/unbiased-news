@@ -1,10 +1,28 @@
 import { supabase } from '@/lib/supabase'
 
+const VALID_TOPICS = new Set([
+  'Technology', 'Finance', 'Geopolitics', 'Science', 'Health & Wellness',
+  'Environment', 'War & Conflict', 'Crypto & Web3', 'Stocks & Investments',
+  'Business', 'World', 'Supply Chain', 'Art', 'Music', 'Culture', 'Pet Care',
+])
+
 export async function POST(request: Request) {
   const { email, topics, timezone } = await request.json()
 
   if (!email || !topics?.length || !timezone) {
     return Response.json({ error: 'Missing required fields' }, { status: 400 })
+  }
+
+  if (!/.+@.+\..+/.test(email)) {
+    return Response.json({ error: 'Invalid email address' }, { status: 400 })
+  }
+
+  if (!Array.isArray(topics) || topics.some((t: unknown) => !VALID_TOPICS.has(t as string))) {
+    return Response.json({ error: 'Invalid topic selected' }, { status: 400 })
+  }
+
+  if (!(Intl as { supportedValuesOf?: (key: string) => string[] }).supportedValuesOf?.('timeZone')?.includes(timezone)) {
+    return Response.json({ error: 'Invalid timezone' }, { status: 400 })
   }
 
   // Check if this email has subscribed before
