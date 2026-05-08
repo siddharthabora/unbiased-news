@@ -19,6 +19,7 @@
 # dev tooling
 CLAUDE.md
 AGENTS.md
+get-refresh-token.mjs
 
 # next.js
 /.next/

@@ -1,14 +1,22 @@
+import { timingSafeEqual } from 'crypto'
 import { supabase } from '@/lib/supabase'
+import { generateUnsubscribeToken } from '@/lib/sendEmail'
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
-  const token = searchParams.get('e')
+  const email = searchParams.get('email')
+  const token = searchParams.get('token')
 
-  if (!token) {
+  if (!email || !token) {
     return new Response(html('Invalid link', 'This unsubscribe link is invalid.'), { headers: { 'Content-Type': 'text/html' } })
   }
 
-  const email = Buffer.from(token, 'base64url').toString()
+  const expected = generateUnsubscribeToken(email)
+  const isValid = token.length === 32 && timingSafeEqual(Buffer.from(expected), Buffer.from(token))
+
+  if (!isValid) {
+    return new Response(html('Invalid link', 'This unsubscribe link is invalid.'), { headers: { 'Content-Type': 'text/html' } })
+  }
 
   const { error } = await supabase
     .from('subscribers')
