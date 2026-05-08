@@ -1,5 +1,11 @@
+import { createHmac } from 'crypto'
 import { google } from 'googleapis'
 import { ProcessedNewsItem } from './processNews'
+
+export function generateUnsubscribeToken(email: string): string {
+  const secret = process.env.UNSUBSCRIBE_SECRET ?? ''
+  return createHmac('sha256', secret).update(email).digest('hex').slice(0, 32)
+}
 
 const oauth2Client = new google.auth.OAuth2(
   process.env.GOOGLE_CLIENT_ID,
@@ -14,7 +20,7 @@ function scoreColor(score: number): string {
   return '#ef4444'
 }
 
-function buildEmailHtml(digest: ProcessedNewsItem[], topics: string[], articleCount: number, unsubscribeToken: string): string {
+function buildEmailHtml(digest: ProcessedNewsItem[], topics: string[], articleCount: number, unsubscribeUrl: string): string {
   const articles = digest
     .map(
       (item) => `
@@ -155,7 +161,7 @@ function buildEmailHtml(digest: ProcessedNewsItem[], topics: string[], articleCo
             You're receiving this because you subscribed at Unbiased Today.<br>
             Sent by <a href="mailto:${process.env.GMAIL_FROM}" style="color:#444">${process.env.GMAIL_FROM}</a>
           </p>
-          <a href="https://www.unbiasedtoday.com/api/unsubscribe?e=${unsubscribeToken}" style="font-size:11px;color:#444;text-decoration:underline">Unsubscribe</a>
+          <a href="${unsubscribeUrl}" style="font-size:11px;color:#444;text-decoration:underline">Unsubscribe</a>
         </td></tr>
 
       </table>
@@ -189,8 +195,9 @@ export async function sendDigestEmail(
 ): Promise<void> {
   const gmail = google.gmail({ version: 'v1', auth: oauth2Client })
   const subject = `Unbiased News Today - ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
-  const unsubscribeToken = Buffer.from(to).toString('base64url')
-  const html = buildEmailHtml(digest, topics, digest.length, unsubscribeToken)
+  const token = generateUnsubscribeToken(to)
+  const unsubscribeUrl = `https://www.unbiasedtoday.com/api/unsubscribe?email=${encodeURIComponent(to)}&token=${token}`
+  const html = buildEmailHtml(digest, topics, digest.length, unsubscribeUrl)
   const raw = encodeEmail(to, subject, html)
 
   await gmail.users.messages.send({
