@@ -381,7 +381,7 @@ GitHub (main branch)
              └── Preview: https://newsletter-git-dev-*.vercel.app (from dev branch)
 
 cron-job.org
-    └── Calls /api/cron/send-digest every minute
+    └── Calls /api/cron/send-digest every 30 minutes
         (self-filters internally to only send at 9 AM per timezone)
 ```
 
