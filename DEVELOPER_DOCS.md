@@ -2,7 +2,7 @@
 
 **Last updated:** May 2026  
 **Production URL:** https://www.unbiasedtoday.com  
-**Repository:** github.com/siddharthabora/AI-newsletter  
+**Repository:** github.com/siddharthabora/unbiased-news  
 
 ---
 
@@ -101,7 +101,7 @@ AI-newsletter/
 
 ```
 [cron-job.org]
-    │  HTTP GET every day at 9 AM UTC
+    │  HTTP GET every 30 minutes
     │  Authorization: Bearer {CRON_SECRET}
     ▼
 app/api/cron/send-digest/route.ts
@@ -250,9 +250,11 @@ Uses `SUPABASE_SERVICE_ROLE_KEY` (not the anon key) — this bypasses Row Level 
 
 | Column | Type | Description |
 |---|---|---|
-| `email` | text (primary key) | Subscriber email address |
+| `id` | uuid (primary key) | Auto-generated unique identifier |
+| `email` | text | Subscriber email address |
 | `topics` | text[] | Array of selected topic strings |
 | `timezone` | text | IANA timezone string (e.g. `Asia/Kolkata`) |
+| `created_at` | timestamptz | When the subscriber first signed up |
 | `updated_at` | timestamptz | Last updated (set on topic/timezone changes) |
 
 ---
@@ -574,5 +576,4 @@ Currently hardcoded to 9 AM. To change it, search for `isNineAmInTimezone` in `a
 
 - Google Cloud project: `news.unbiasedai@gmail.com` (new project — the old `unbaisedai.news@gmail.com` project is deprecated)
 - OAuth app status: "Testing" — approved test users must be explicitly added in Google Cloud Console → OAuth consent screen → Test users
-- Refresh tokens from Testing-status apps expire after 7 days of inactivity; publishing the app removes this limit
 - OAuth credentials (Client ID: `999061842577-...`) are stored in Vercel env vars only
