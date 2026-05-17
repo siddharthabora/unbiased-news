@@ -575,5 +575,5 @@ Currently hardcoded to 9 AM. To change it, search for `isNineAmInTimezone` in `a
 ### Google OAuth notes
 
 - Google Cloud project: `news.unbiasedai@gmail.com` (new project — the old `unbaisedai.news@gmail.com` project is deprecated)
-- OAuth app status: "Testing" — approved test users must be explicitly added in Google Cloud Console → OAuth consent screen → Test users
+- OAuth app status: "In production" (published May 2026) — refresh tokens no longer expire on a 7-day cycle; token only expires if unused for 6 months, access is revoked, or the account password changes
 - OAuth credentials (Client ID: `999061842577-...`) are stored in Vercel env vars only
