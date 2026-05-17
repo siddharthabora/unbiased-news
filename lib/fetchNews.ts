@@ -339,6 +339,27 @@ async function scrapeWithJina(source: FeedEntry): Promise<NewsItem[]> {
   }
 }
 
+// Fetches the full article body for a given URL via Jina AI Reader.
+// Used as a fallback for RSS sources that only publish teaser-length descriptions.
+// Returns up to 800 chars of clean plain text, or '' on failure.
+async function fetchArticleContent(url: string): Promise<string> {
+  try {
+    const res = await fetch(`https://r.jina.ai/${url}`, {
+      headers: { Accept: 'text/plain' },
+      signal: AbortSignal.timeout(15000),
+    })
+    if (!res.ok) return ''
+    const text = await res.text()
+    const clean = text
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+      .replace(/\s+/g, ' ')
+      .trim()
+    return clean.slice(0, 800)
+  } catch {
+    return ''
+  }
+}
+
 export async function fetchAllNews(): Promise<NewsItem[]> {
   const rawResults: NewsItem[] = []
 
@@ -395,6 +416,17 @@ export async function fetchAllNews(): Promise<NewsItem[]> {
     countBySource[item.source] = (countBySource[item.source] ?? 0) + 1
     if (countBySource[item.source] <= MAX_PER_SOURCE) results.push(item)
   }
+
+  // Enrich teaser-only articles by fetching their full body via Jina AI Reader.
+  // Some RSS sources (e.g. Mindbodygreen) publish only a short teaser in their feed.
+  // Without real content, GPT cannot evaluate the article and assigns near-zero scores.
+  const toEnrich = results.filter(item => item.summary.trim().length < 20)
+  await Promise.allSettled(
+    toEnrich.map(async (item) => {
+      const content = await fetchArticleContent(item.link)
+      if (content.length >= 20) item.summary = content
+    })
+  )
 
   return results
 }
