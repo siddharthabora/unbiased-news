@@ -17,10 +17,11 @@ const TOPICS = [
   'Music',
   'Art',
   'Culture',
-  'Entertainment',
   'Health & Wellness',
   'Science',
   'Environment',
+  'Business',
+  'Pet Care',
 ]
 
 const TIMEZONES = [
