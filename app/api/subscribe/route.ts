@@ -6,6 +6,13 @@ const VALID_TOPICS = new Set([
   'Business', 'World', 'Supply Chain', 'Art', 'Music', 'Culture', 'Pet Care',
 ])
 
+const VALID_TIMEZONES = new Set([
+  'America/New_York', 'America/Los_Angeles', 'America/Chicago',
+  'Europe/London', 'Europe/Paris', 'Asia/Dubai', 'Asia/Kolkata',
+  'Asia/Singapore', 'Asia/Tokyo', 'Australia/Sydney',
+  'America/Sao_Paulo', 'Africa/Nairobi',
+])
+
 export async function POST(request: Request) {
   const { email, topics, timezone } = await request.json()
 
@@ -21,7 +28,7 @@ export async function POST(request: Request) {
     return Response.json({ error: 'Invalid topic selected' }, { status: 400 })
   }
 
-  if (!(Intl as { supportedValuesOf?: (key: string) => string[] }).supportedValuesOf?.('timeZone')?.includes(timezone)) {
+  if (!VALID_TIMEZONES.has(timezone)) {
     return Response.json({ error: 'Invalid timezone' }, { status: 400 })
   }
 
