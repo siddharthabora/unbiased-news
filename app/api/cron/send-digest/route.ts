@@ -76,8 +76,10 @@ export async function GET(request: Request) {
     return Response.json({ ok: true, sent: 0, message: 'No subscribers at 9am right now' })
   }
 
+  const start = Date.now()
   // Fetch news once for all eligible subscribers
   const allNews = await fetchAllNews()
+  console.log(`[TIMING] prod RSS_FETCH_MS=${Date.now() - start}`)
 
   // Send personalized digests in parallel
   const results = await Promise.allSettled(
@@ -90,6 +92,8 @@ export async function GET(request: Request) {
     })
   )
 
+  console.log(`[TIMING] prod SUBSCRIBER_LOOP_MS=${Date.now() - start}`)
+
   const summary = results.map((r, i) =>
     r.status === 'fulfilled'
       ? { email: eligible[i].email, status: 'sent', articles: r.value.articles }
@@ -97,6 +101,8 @@ export async function GET(request: Request) {
   )
 
   console.log('Cron digest run:', JSON.stringify(summary))
+  console.log(`[TIMING] prod TOTAL_MS=${Date.now() - start}`)
+  console.log(`[TIMING] prod SUBSCRIBER_COUNT=${eligible.length}`)
   return Response.json({
     ok: true,
     sent: summary.filter(s => s.status === 'sent').length,
