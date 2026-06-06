@@ -2,6 +2,7 @@ export const maxDuration = 60
 
 import { supabase } from '@/lib/supabase'
 import { fetchAllNews } from '@/lib/fetchNews'
+import { readNewsCache } from '@/lib/newsCache'
 import { selectAndSummarize } from '@/lib/processNews'
 import { sendDigestEmail } from '@/lib/sendEmail'
 
@@ -46,10 +47,19 @@ export async function GET(request: Request) {
   // DEV_MODE: bypass timezone filter, send all topics to DEV_EMAIL only
   if (DEV_MODE) {
     if (!DEV_EMAIL) return Response.json({ error: 'DEV_EMAIL env var not set' }, { status: 500 })
-    const allNews = await fetchAllNews()
+    const start = Date.now()
+    let allNews = await readNewsCache()
+    if (!allNews) {
+      console.log('[CACHE] miss or stale — falling back to live fetch')
+      allNews = await fetchAllNews()
+    }
+    console.log(`[TIMING] dev RSS_FETCH_MS=${Date.now() - start}`)
     const digest = await selectAndSummarize(allNews, ALL_TOPICS, 'Asia/Kolkata')
+    console.log(`[TIMING] dev SELECT_DONE_MS=${Date.now() - start}`)
     if (digest.length === 0) return Response.json({ ok: true, dev: true, sent: 0, message: 'No articles found' })
     await sendDigestEmail(DEV_EMAIL, ALL_TOPICS, digest)
+    console.log(`[TIMING] dev TOTAL_MS=${Date.now() - start}`)
+    console.log(`[TIMING] dev TOPIC_COUNT=16`)
     return Response.json({ ok: true, dev: true, sent: 1, email: DEV_EMAIL, articles: digest.length })
   }
 
@@ -73,7 +83,11 @@ export async function GET(request: Request) {
 
   const start = Date.now()
   // Fetch news once for all eligible subscribers
-  const allNews = await fetchAllNews()
+  let allNews = await readNewsCache()
+  if (!allNews) {
+    console.log('[CACHE] miss or stale — falling back to live fetch')
+    allNews = await fetchAllNews()
+  }
   console.log(`[TIMING] prod RSS_FETCH_MS=${Date.now() - start}`)
 
   // Send personalized digests in parallel
