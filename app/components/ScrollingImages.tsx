@@ -14,21 +14,40 @@ function fallbackUrls(group: string): string[] {
   return (FALLBACK[group] ?? []).map((s) => `https://picsum.photos/seed/${s}/200/300`)
 }
 
-function useCarouselImages() {
-  const [images, setImages] = useState<Record<string, string[]> | null>(null)
+type CarouselState =
+  | { status: 'loading' }
+  | { status: 'ready'; images: Record<string, string[]> }
+  | { status: 'failed' }
+
+function useCarouselImages(): CarouselState {
+  const [state, setState] = useState<CarouselState>({ status: 'loading' })
 
   useEffect(() => {
+    let cancelled = false
     fetch('/api/carousel-images')
       .then((r) => r.json())
       .then((data) => {
+        if (cancelled) return
         // Only use real images if each column has at least 5
         const valid = Object.values(data as Record<string, string[]>).every((urls) => urls.length >= 5)
-        if (valid) setImages(data)
+        setState(valid ? { status: 'ready', images: data } : { status: 'failed' })
       })
-      .catch(() => {}) // silently fall back to picsum
+      .catch(() => {
+        if (!cancelled) setState({ status: 'failed' })
+      })
+    return () => { cancelled = true }
   }, [])
 
-  return images
+  return state
+}
+
+function urlsFor(state: CarouselState, group: string): string[] {
+  if (state.status === 'ready') {
+    const urls = state.images[group]
+    return urls?.length ? urls : []
+  }
+  if (state.status === 'failed') return fallbackUrls(group)
+  return []
 }
 
 interface ColumnProps {
@@ -65,6 +84,8 @@ function ImageColumn({ urls, direction, duration, delay }: ColumnProps) {
             <img
               src={url}
               alt=""
+              loading="lazy"
+              decoding="async"
               className="w-full rounded-md object-cover"
               style={{
                 aspectRatio: '2 / 3',
@@ -85,12 +106,12 @@ function ImageColumn({ urls, direction, duration, delay }: ColumnProps) {
 }
 
 export function LeftColumns() {
-  const images = useCarouselImages()
-  const left1 = images?.left1?.length ? images.left1 : fallbackUrls('left1')
-  const left2 = images?.left2?.length ? images.left2 : fallbackUrls('left2')
+  const state = useCarouselImages()
+  const left1 = urlsFor(state, 'left1')
+  const left2 = urlsFor(state, 'left2')
 
   return (
-    <div className="hidden lg:flex gap-5 w-64 xl:w-72 shrink-0 h-full px-2">
+    <div aria-hidden="true" className="hidden lg:flex gap-5 w-64 xl:w-72 shrink-0 h-full px-2">
       <ImageColumn urls={left1} direction="up" duration={42} delay={0} />
       <ImageColumn urls={left2} direction="up" duration={55} delay={-18} />
     </div>
@@ -98,12 +119,12 @@ export function LeftColumns() {
 }
 
 export function RightColumns() {
-  const images = useCarouselImages()
-  const right1 = images?.right1?.length ? images.right1 : fallbackUrls('right1')
-  const right2 = images?.right2?.length ? images.right2 : fallbackUrls('right2')
+  const state = useCarouselImages()
+  const right1 = urlsFor(state, 'right1')
+  const right2 = urlsFor(state, 'right2')
 
   return (
-    <div className="hidden lg:flex gap-5 w-64 xl:w-72 shrink-0 h-full px-2">
+    <div aria-hidden="true" className="hidden lg:flex gap-5 w-64 xl:w-72 shrink-0 h-full px-2">
       <ImageColumn urls={right1} direction="down" duration={48} delay={-12} />
       <ImageColumn urls={right2} direction="down" duration={38} delay={0} />
     </div>
