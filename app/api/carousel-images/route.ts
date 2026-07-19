@@ -1,4 +1,5 @@
 import { fetchAllNews } from '@/lib/fetchNews'
+import { readNewsCache } from '@/lib/newsCache'
 
 export const revalidate = 3600 // Next.js caches this response for 1 hour
 export const maxDuration = 60  // Vercel Hobby allows up to 60s for serverless functions
@@ -11,7 +12,8 @@ const COLUMN_TOPICS: Record<string, string[]> = {
 }
 
 export async function GET() {
-  const allNews = await fetchAllNews()
+  const cached = await readNewsCache()
+  const allNews = cached ?? (await fetchAllNews())
   const withImages = allNews.filter(
     (item) => item.imageUrl && item.imageUrl.startsWith('http')
   )
