@@ -51,6 +51,7 @@ export default function Home() {
   const [headlineDone, setHeadlineDone] = useState(false)
   const [showContent, setShowContent] = useState(false)
   const [scanDone, setScanDone] = useState(false)
+  const [typingStarted, setTypingStarted] = useState(false)
 
   useEffect(() => {
     // Scan line lasts 1.2s, then remove it from the DOM
@@ -58,6 +59,7 @@ export default function Home() {
 
     // Start typing after scan line has swept past the headline area (~1.5s in)
     const startTimer = setTimeout(() => {
+      setTypingStarted(true)
       let i = 0
       const interval = setInterval(() => {
         i++
@@ -128,9 +130,21 @@ export default function Home() {
         </div>
 
         {/* Typewriter headline */}
-        <h1 className="text-5xl font-black tracking-tight leading-[1.1] mb-6" style={{ minHeight: '1.2em' }}>
-          {displayedHeadline}
-          {!headlineDone && <span className="cursor-blink">|</span>}
+        <h1
+          aria-label={HEADLINE}
+          className="relative text-5xl font-black tracking-tight leading-[1.1] mb-6"
+          style={{ minHeight: '1.2em' }}
+        >
+          <span aria-hidden="true" className={typingStarted ? 'invisible' : undefined}>
+            {HEADLINE}
+          </span>
+
+          {typingStarted && (
+            <span aria-hidden="true" className="absolute inset-0">
+              {displayedHeadline}
+              {!headlineDone && <span className="cursor-blink">|</span>}
+            </span>
+          )}
         </h1>
 
         {/* Subtitle — fades in after headline finishes */}
