@@ -375,7 +375,15 @@ export async function fetchAllNews(): Promise<NewsItem[]> {
       } catch {
         return
       }
-      for (const item of parsed.items.slice(0, MAX_PER_SOURCE)) {
+      const sortedItems = [...parsed.items].sort((a, b) => {
+        const ta = new Date(a.pubDate ?? '').getTime()
+        const tb = new Date(b.pubDate ?? '').getTime()
+        if (Number.isNaN(ta) && Number.isNaN(tb)) return 0
+        if (Number.isNaN(ta)) return 1
+        if (Number.isNaN(tb)) return -1
+        return tb - ta
+      })
+      for (const item of sortedItems.slice(0, MAX_PER_SOURCE)) {
         if (!item.title || !item.link) continue
         rawResults.push({
           title: item.title,
