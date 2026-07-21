@@ -6,6 +6,29 @@ import { readNewsCache } from '@/lib/newsCache'
 import { selectAndSummarize } from '@/lib/processNews'
 import { sendDigestEmail } from '@/lib/sendEmail'
 
+const MAX_ARTICLE_AGE_MS = 24 * 60 * 60 * 1000
+
+function filterRecent<T extends { publishedAt: string }>(
+  items: T[]
+): { kept: T[]; dropped: number; unparseable: number } {
+  const cutoff = Date.now() - MAX_ARTICLE_AGE_MS
+  let dropped = 0
+  let unparseable = 0
+  const kept = items.filter((item) => {
+    const t = new Date(item.publishedAt).getTime()
+    if (Number.isNaN(t)) {
+      unparseable++
+      return true
+    }
+    if (t < cutoff) {
+      dropped++
+      return false
+    }
+    return true
+  })
+  return { kept, dropped, unparseable }
+}
+
 function isNineAmInTimezone(timezone: string): boolean {
   try {
     const now = new Date()
@@ -60,6 +83,10 @@ export async function GET(request: Request) {
     console.log('[CACHE] miss or stale — falling back to live fetch')
     allNews = await fetchAllNews()
   }
+  const before = allNews.length
+  const recency = filterRecent(allNews)
+  allNews = recency.kept
+  console.log(`[RECENCY] before=${before} after=${allNews.length} dropped=${recency.dropped} unparseable=${recency.unparseable}`)
   console.log(`[TIMING] prod RSS_FETCH_MS=${Date.now() - start}`)
 
   // Send personalized digests in parallel
