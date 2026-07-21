@@ -37,6 +37,29 @@ const ALL_TOPICS = [
   'Business', 'World', 'Supply Chain', 'Art', 'Music', 'Culture', 'Pet Care',
 ]
 
+const MAX_ARTICLE_AGE_MS = 24 * 60 * 60 * 1000
+
+function filterRecent<T extends { publishedAt: string }>(
+  items: T[]
+): { kept: T[]; dropped: number; unparseable: number } {
+  const cutoff = Date.now() - MAX_ARTICLE_AGE_MS
+  let dropped = 0
+  let unparseable = 0
+  const kept = items.filter((item) => {
+    const t = new Date(item.publishedAt).getTime()
+    if (Number.isNaN(t)) {
+      unparseable++
+      return true
+    }
+    if (t < cutoff) {
+      dropped++
+      return false
+    }
+    return true
+  })
+  return { kept, dropped, unparseable }
+}
+
 export async function GET(request: Request) {
   // Verify this is called by Vercel cron, not a random visitor
   const authHeader = request.headers.get('authorization')
@@ -53,6 +76,10 @@ export async function GET(request: Request) {
       console.log('[CACHE] miss or stale — falling back to live fetch')
       allNews = await fetchAllNews()
     }
+    const devBefore = allNews.length
+    const devRecency = filterRecent(allNews)
+    allNews = devRecency.kept
+    console.log(`[RECENCY] dev before=${devBefore} after=${allNews.length} dropped=${devRecency.dropped} unparseable=${devRecency.unparseable}`)
     console.log(`[TIMING] dev RSS_FETCH_MS=${Date.now() - start}`)
     const digest = await selectAndSummarize(allNews, ALL_TOPICS, 'Asia/Kolkata')
     console.log(`[TIMING] dev SELECT_DONE_MS=${Date.now() - start}`)
@@ -88,6 +115,10 @@ export async function GET(request: Request) {
     console.log('[CACHE] miss or stale — falling back to live fetch')
     allNews = await fetchAllNews()
   }
+  const before = allNews.length
+  const recency = filterRecent(allNews)
+  allNews = recency.kept
+  console.log(`[RECENCY] before=${before} after=${allNews.length} dropped=${recency.dropped} unparseable=${recency.unparseable}`)
   console.log(`[TIMING] prod RSS_FETCH_MS=${Date.now() - start}`)
 
   // Send personalized digests in parallel
