@@ -1,6 +1,6 @@
 # Unbiased Today — Developer Documentation
 
-**Last updated:** May 2026  
+**Last updated:** June 2026  
 **Production URL:** https://www.unbiasedtoday.com  
 **Repository:** github.com/siddharthabora/unbiased-news  
 
@@ -29,7 +29,7 @@
 
 **Unbiased Today** is an AI-powered daily news digest delivered by email at 9:00 AM in each subscriber's local timezone. 
 
-Each email contains 10–14 news articles selected by GPT from ~80 RSS sources. Every article is analysed for authenticity, political bias, geopolitical framing, loaded language, and omissions before it is summarised and delivered. Articles are also prioritised by the subscriber's geographic region.
+Each email contains 10–14 news articles selected by GPT from 110 RSS sources. Every article is analysed for authenticity, political bias, geopolitical framing, loaded language, and omissions before it is summarised and delivered. Articles are also prioritised by the subscriber's geographic region.
 
 Subscribers choose their topics and timezone at sign-up. The newsletter is fully automated — no manual curation.
 
@@ -62,6 +62,7 @@ AI-newsletter/
 │   ├── api/
 │   │   ├── carousel-images/route.ts   — Feeds images to landing page columns
 │   │   ├── cron/
+│   │   │   ├── fetch-news/route.ts    — Fetches all RSS feeds and writes them to Supabase cache
 │   │   │   └── send-digest/route.ts   — MAIN PIPELINE: runs daily, sends all emails
 │   │   ├── subscribe/route.ts         — Handles new subscriber sign-ups
 │   │   ├── unsubscribe/route.ts       — Handles unsubscribe link clicks
@@ -75,6 +76,7 @@ AI-newsletter/
 │   └── page.tsx                       — Landing page (subscribe form)
 ├── lib/
 │   ├── fetchNews.ts                   — Fetches all RSS feeds, expands topics by keyword
+│   ├── newsCache.ts                   — Reads and writes the RSS article cache in Supabase
 │   ├── processNews.ts                 — GPT selection + analysis pipeline
 │   ├── regionMap.ts                   — Timezone → region mapping
 │   ├── sendEmail.ts                   — Builds HTML email, sends via Gmail API
@@ -99,9 +101,34 @@ AI-newsletter/
 
 ## 4. How the Pipeline Works (End to End)
 
+The pipeline runs in two independent stages. Stage 1 pre-fetches RSS content into Supabase. Stage 2 reads from that cache and delivers emails. Both stages are triggered by cron-job.org; the schedule is configured there and is not represented in the repo.
+
+### Stage 1 — Cache Refresh
+
 ```
 [cron-job.org]
-    │  HTTP GET every 30 minutes
+    │  HTTP GET every 15 minutes
+    │  Authorization: Bearer {CRON_SECRET}
+    ▼
+app/api/cron/fetch-news/route.ts
+    │
+    ├── 1. Verify CRON_SECRET (reject if missing/wrong)
+    │
+    ├── 2. Fetch all RSS feeds (lib/fetchNews.ts)
+    │        └── 110 sources fetched in parallel, 4 articles max per source
+    │            Each article tagged with: title, summary, link, source,
+    │            publishedAt, imageUrl, feedTopics (expanded by keyword),
+    │            tier (1 or 2), regions
+    │
+    └── 3. lib/newsCache.ts → writeNewsCache()
+             └── Upserts to Supabase news_cache (id = 'latest') if article count ≥ MIN_ARTICLES
+```
+
+### Stage 2 — Digest Delivery
+
+```
+[cron-job.org]
+    │  HTTP GET every 15 minutes
     │  Authorization: Bearer {CRON_SECRET}
     ▼
 app/api/cron/send-digest/route.ts
@@ -112,11 +139,10 @@ app/api/cron/send-digest/route.ts
     │
     ├── 3. Filter: keep only subscribers whose local time is currently 9 AM
     │
-    ├── 4. Fetch all RSS feeds (lib/fetchNews.ts)
-    │        └── ~80 sources fetched in parallel, 4 articles max per source
-    │            Each article tagged with: title, summary, link, source, 
-    │            publishedAt, imageUrl, feedTopics (expanded by keyword), 
-    │            tier (1 or 2), regions
+    ├── 4. Load articles:
+    │        ├── lib/newsCache.ts → readNewsCache()
+    │        │        └── Returns null if row missing or fetched_at > 2 hours ago
+    │        └── If null: live fallback → fetchAllNews() (lib/fetchNews.ts)
     │
     ├── 5. For each eligible subscriber (in parallel):
     │        │
@@ -140,7 +166,7 @@ app/api/cron/send-digest/route.ts
              └── Send via Gmail API (OAuth2)
 ```
 
-**DEV_MODE** (dev branch only): bypasses subscriber timezone filter, sends all topics to `DEV_EMAIL` only. Never present on main/production.
+**DEV_MODE** (dev branch only): bypasses subscriber timezone filter, sends all topics to `DEV_EMAIL` only. This code does not exist on main — the production branch has no DEV_MODE or DEV_EMAIL references.
 
 ---
 
@@ -155,7 +181,7 @@ app/api/cron/send-digest/route.ts
 - `NewsItem` interface — the shape of every raw article
 
 **Key internals:**
-- `RSS_FEEDS` array — every news source: name, RSS URL, topics, tier (1 or 2), regions
+- `RSS_FEEDS` array — every news source: name, RSS URL, topics, tier (1 or 2), regions (110 entries)
 - `JINA_SOURCES` array — currently empty; designed for sources without RSS feeds
 - `TOPIC_KEYWORD_EXPANSION` — keyword lists that expand an article's topics beyond the feed's base tags (e.g., an article mentioning "bitcoin" on a finance feed also gets tagged `Crypto & Web3`)
 - `expandTopicsFromContent()` — applies keyword expansion to each article
@@ -246,6 +272,8 @@ app/api/cron/send-digest/route.ts
 
 Uses `SUPABASE_SERVICE_ROLE_KEY` (not the anon key) — this bypasses Row Level Security and allows full read/write access. Never expose this client to the browser.
 
+The client is created at module load time. A missing `SUPABASE_SERVICE_ROLE_KEY` in `.env.local` causes Next.js to throw `supabaseKey is required` during page-data collection (`npm run build` or `npm run dev`). A fresh clone must have this key in `.env.local` before running locally.
+
 **Supabase database table: `subscribers`**
 
 | Column | Type | Description |
@@ -257,22 +285,62 @@ Uses `SUPABASE_SERVICE_ROLE_KEY` (not the anon key) — this bypasses Row Level 
 | `created_at` | timestamptz | When the subscriber first signed up |
 | `updated_at` | timestamptz | Last updated (set on topic/timezone changes) |
 
+**Supabase database table: `news_cache`**
+
+| Column | Type | Description |
+|---|---|---|
+| `id` | text (primary key) | Always `'latest'` — single-row cache |
+| `articles` | jsonb | Raw `NewsItem[]` array from RSS (not yet GPT-analysed) |
+| `article_count` | integer | Number of articles stored (denormalised for quick checks) |
+| `fetched_at` | timestamptz | When the cache was last written |
+
+---
+
+### `lib/newsCache.ts`
+
+**Purpose:** Reads and writes the RSS article cache stored in Supabase, so `send-digest` can avoid fetching all 110 RSS sources on every run.
+
+**Key exports:**
+- `readNewsCache(): Promise<NewsItem[] | null>` — reads the `news_cache` row with `id = 'latest'`. Returns `null` if the row does not exist or if `fetched_at` is more than **2 hours** old (`MAX_CACHE_AGE_MS = 2 * 60 * 60 * 1000`, a hardcoded constant).
+- `writeNewsCache(articles: NewsItem[]): Promise<{ written: boolean; count: number }>` — upserts the article array to `news_cache`. Skips the write and returns `{ written: false }` if the array contains fewer articles than `MIN_ARTICLES` (read from `process.env.NEWS_CACHE_MIN_ARTICLES`, default `30`).
+
+**Where to look if:**
+- `send-digest` is always doing a live RSS fetch → either `fetch-news` is not running, the cache row is missing, or every run is older than 2 hours when `send-digest` fires
+- The cache is written but is too small → lower `NEWS_CACHE_MIN_ARTICLES` or investigate why `fetchAllNews()` returned fewer articles than expected
+
 ---
 
 ### `app/api/cron/send-digest/route.ts`
 
-**Purpose:** The main pipeline entry point. Called once per minute by cron-job.org; it self-filters to only send to subscribers at 9 AM in their timezone.
+**Purpose:** The main pipeline entry point. Called every 15 minutes by cron-job.org; it self-filters to only send to subscribers whose local time is currently 9 AM.
 
 **Key logic:**
-- Line 42: `CRON_SECRET` bearer token verification — rejects any request without the correct header
-- `DEV_MODE` flag (dev branch only): bypasses timezone filter, sends to `DEV_EMAIL` only
-- `ALL_TOPICS` array (line 33): the master list of all valid topics — must stay in sync with `VALID_TOPICS` in `subscribe/route.ts` and `TOPICS` in `page.tsx`
+- `CRON_SECRET` bearer token verification — rejects any request without the correct header
+- Reads articles from `lib/newsCache.ts → readNewsCache()` first; if the cache returns `null` (miss or stale), falls back to a live call to `fetchAllNews()`
+- `ALL_TOPICS` array: the master list of all valid topics — must stay in sync with `VALID_TOPICS` in `subscribe/route.ts` and `TOPICS` in `page.tsx`
 - `isNineAmInTimezone()` — checks if the current UTC time corresponds to 9 AM in a given timezone
 - Returns: `{ ok: true, sent: N, failed: N }` — no subscriber emails in response
+- **DEV_MODE does not exist on this branch.** It is present only on `dev` and is not gated by an env var on `main` — the code is simply absent.
 
 **Where to look if:**
 - Emails not sending at the right time → check `isNineAmInTimezone()` logic and cron-job.org schedule
 - Pipeline is timing out → check Vercel logs; the 60s limit occasionally bites with many subscribers
+- Always hitting the live RSS fallback → see `lib/newsCache.ts` — confirm `fetch-news` cron is running and writing successfully
+
+---
+
+### `app/api/cron/fetch-news/route.ts`
+
+**Purpose:** Fetches all RSS feeds and writes the results to the Supabase `news_cache` table so `send-digest` does not have to do it on every run.
+
+**Key logic:**
+- `CRON_SECRET` bearer token verification — same mechanism as `send-digest`
+- Calls `fetchAllNews()` then passes the results to `writeNewsCache()`
+- Returns `{ ok: true, fetched: N, written: true|false }` — `written` will be `false` if the article count was below `MIN_ARTICLES`
+
+**Where to look if:**
+- `written: false` in the response → `fetchAllNews()` returned fewer articles than `NEWS_CACHE_MIN_ARTICLES` (default 30); investigate RSS source failures
+- 401 response → `CRON_SECRET` header is missing or wrong
 
 ---
 
@@ -338,6 +406,7 @@ Uses `SUPABASE_SERVICE_ROLE_KEY` (not the anon key) — this bypasses Row Level 
 |---|---|---|---|
 | `POST` | `/api/subscribe` | None | Add/update subscriber |
 | `GET` | `/api/unsubscribe` | HMAC token in URL | Remove subscriber |
+| `GET` | `/api/cron/fetch-news` | `CRON_SECRET` bearer token | Fetch all RSS feeds and write to Supabase cache |
 | `GET` | `/api/cron/send-digest` | `CRON_SECRET` bearer token | Run the full digest pipeline |
 | `GET` | `/api/carousel-images` | None | Supply images to landing page |
 
@@ -364,8 +433,9 @@ All secrets live in Vercel (Production + Preview environments). Locally they liv
 | `GOOGLE_CLIENT_SECRET` | `lib/sendEmail.ts` | Google OAuth2 client secret |
 | `GOOGLE_REFRESH_TOKEN` | `lib/sendEmail.ts` | Long-lived Gmail OAuth2 token |
 | `GMAIL_FROM` | `lib/sendEmail.ts` | Sender email address (`news.unbiasedai@gmail.com`) |
-| `CRON_SECRET` | `app/api/cron/send-digest/route.ts` | Bearer token that protects the cron endpoint |
+| `CRON_SECRET` | `app/api/cron/send-digest/route.ts`, `app/api/cron/fetch-news/route.ts` | Bearer token that protects the cron endpoints |
 | `UNSUBSCRIBE_SECRET` | `lib/sendEmail.ts`, `app/api/unsubscribe/route.ts` | Secret for HMAC-SHA256 unsubscribe token signing |
+| `NEWS_CACHE_MIN_ARTICLES` | `lib/newsCache.ts` | *(Optional, default: `30`)* Minimum article count required before `writeNewsCache` will write to Supabase. If `fetchAllNews()` returns fewer articles than this threshold, the cache write is skipped. |
 
 **None of these variables are prefixed with `NEXT_PUBLIC_`** — they are never exposed to the browser.
 
@@ -381,7 +451,8 @@ GitHub (main branch)
              └── Preview: https://newsletter-git-dev-*.vercel.app (from dev branch)
 
 cron-job.org
-    └── Calls /api/cron/send-digest every 30 minutes
+    ├── Calls /api/cron/fetch-news every 15 minutes
+    └── Calls /api/cron/send-digest every 15 minutes
         (self-filters internally to only send at 9 AM per timezone)
 ```
 
@@ -401,7 +472,7 @@ cron-job.org
 | `dev` | Development and testing | Vercel Preview |
 
 **Critical rule: never merge `dev` into `main`.**  
-The `dev` branch contains a `DEV_MODE` flag in `send-digest/route.ts` that bypasses the timezone filter and sends to a test email only. If merged to main, it would send to real subscribers incorrectly.
+The `dev` branch contains a `DEV_MODE` flag in `send-digest/route.ts` that bypasses the timezone filter and sends to a test email only. This code does not exist on `main` at all — the safety guarantee is that it is absent from production, not that an env var keeps it dormant. Merging `dev` into `main` would introduce it.
 
 **Correct workflow for shipping to production:**
 1. Make changes on `dev`
@@ -430,6 +501,8 @@ npm run dev
 The app runs at `http://localhost:3000`.
 
 `.env.local` must be populated with all environment variables listed in Section 7 for any API routes to work locally.
+
+**Important for fresh clones:** `lib/supabase.ts` creates the Supabase client at module load time using a non-null assertion on `SUPABASE_SERVICE_ROLE_KEY`. If that key is absent from `.env.local`, both `npm run dev` and `npm run build` will throw `supabaseKey is required` during Next.js page-data collection and refuse to start. Set `SUPABASE_SERVICE_ROLE_KEY` in `.env.local` before running anything locally.
 
 ---
 
@@ -491,6 +564,7 @@ curl -H "Authorization: Bearer YOUR_CRON_SECRET" \
 
 1. Check the Build Logs in Vercel for TypeScript errors
 2. Run `npm run build` locally to reproduce the error before pushing
+3. **`supabaseKey is required` during local build** — `SUPABASE_SERVICE_ROLE_KEY` is missing from `.env.local`. Add it before running `npm run build` or `npm run dev` (see Section 10).
 
 ---
 
@@ -569,8 +643,20 @@ Currently hardcoded to 9 AM. To change it, search for `isNineAmInTimezone` in `a
 
 - Never add `NEXT_PUBLIC_` prefix to any secret environment variable
 - Never commit `.env.local`
-- Never merge `dev` into `main` (would expose DEV_MODE behaviour in production)
+- Never merge `dev` into `main` (would introduce DEV_MODE into production — it is absent from `main`, not env-var-gated)
 - If `UNSUBSCRIBE_SECRET` is rotated, all existing unsubscribe links in previously sent emails will stop working — subscribers would need a new email to unsubscribe
+
+### Known future migration — Supabase legacy API keys (not yet started)
+
+Supabase is deprecating the legacy `anon` and `service_role` API keys by end of 2026. Before that deadline the project must:
+
+1. Generate the new `sb_secret_...` key from the Supabase dashboard
+2. Update `SUPABASE_SERVICE_ROLE_KEY` in `.env.local` and in Vercel environment variables
+3. Deactivate the legacy keys in the Supabase dashboard
+
+This migration has not been started. Track it before the end of 2026.
+
+---
 
 ### Google OAuth notes
 
