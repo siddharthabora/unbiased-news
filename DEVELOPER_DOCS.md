@@ -1,6 +1,6 @@
 # Unbiased Today — Developer Documentation
 
-**Last updated:** June 2026  
+**Last updated:** July 2026  
 **Production URL:** https://www.unbiasedtoday.com  
 **Repository:** github.com/siddharthabora/unbiased-news  
 
@@ -372,10 +372,20 @@ The client is created at module load time. A missing `SUPABASE_SERVICE_ROLE_KEY`
 
 ### `app/api/carousel-images/route.ts`
 
-**Purpose:** Serves image URLs to the landing page's animated columns. Fetches live news images from RSS and groups them into 4 columns.
+**Purpose:** Serves image URLs to the landing page's animated columns, grouped into 4 columns by topic.
 
-- Cached for 1 hour (`revalidate = 3600`)
-- Falls back to placeholder images (picsum.photos) if fewer than 5 real images per column
+**This is the second consumer of `news_cache`.** It calls `readNewsCache()` first and only falls back to a live `fetchAllNews()` call on a cache miss. If `fetch-news` stops writing, this route silently degrades from a sub-second cache read to a full RSS fetch, which is slow but not visibly broken.
+
+**Key logic:**
+- `COLUMN_TOPICS` maps each of the 4 columns to a set of topics
+- First pass fills each column from its own topic group, up to 10 images
+- Second pass tops up any column still under 10 from the leftover pool
+- Only items with an `imageUrl` starting with `http` are eligible
+- Cached for 1 hour (`revalidate = 3600`), `maxDuration = 60`
+
+**Where to look if:**
+- Response is slow → `readNewsCache()` is returning null and the route is doing a live RSS fetch; check the `fetch-news` cron
+- Columns are uneven or short → not enough cached articles carry images
 
 ---
 
@@ -387,6 +397,10 @@ The client is created at module load time. A missing `SUPABASE_SERVICE_ROLE_KEY`
 - `TIMEZONES` array: the dropdown options. Values must be valid IANA timezone strings also present in `lib/regionMap.ts`.
 - Submits to `POST /api/subscribe`
 
+**The `<h1>` renders its text twice on purpose.** The static `<span>` containing `{HEADLINE}` is what the server sends and what crawlers read. The typewriter `<span>` is absolutely positioned on top of it and only mounts once `typingStarted` flips true in a client effect. The `'use client'` directive at the top of the file does not prevent server rendering — App Router still server-renders client components on the first request, and `typingStarted` is false at that point, so the static span renders without its `invisible` class.
+
+⚠️ **The duplicated span is not dead code.** Removing it, or moving the headline text into state, makes the page ship an empty `<h1>` to crawlers. Nothing in the build or lint will catch that.
+
 ---
 
 ### `app/components/ScrollingImages.tsx`
@@ -394,9 +408,12 @@ The client is created at module load time. A missing `SUPABASE_SERVICE_ROLE_KEY`
 **Purpose:** The animated scrolling image columns on the left and right of the landing page.
 
 - Fetches image URLs from `/api/carousel-images` on mount
-- Falls back to placeholder images if the API fails or returns too few images
 - `LeftColumns` — two columns scrolling upward
 - `RightColumns` — two columns scrolling downward
+
+**Three-state loading, and why it matters:** the `CarouselState` machine has `loading`, `ready` and `failed`. During `loading` the component renders **no images at all** — it does not render placeholders. Picsum URLs appear only on the `failed` branch, which is reachable only after a client fetch has resolved.
+
+⚠️ **Do not render placeholders during `loading`.** It looks like an obvious UX improvement and it is not. It would put picsum.photos URLs back into the server-rendered HTML, which is what a crawler sees. The columns are decorative, so both wrappers carry `aria-hidden="true"` and every image uses `alt=""`, `loading="lazy"` and `decoding="async"`. There is no test covering any of this.
 
 ---
 
@@ -558,7 +575,13 @@ curl -H "Authorization: Bearer YOUR_CRON_SECRET" \
 ### Landing page images not loading
 
 1. `/api/carousel-images` failing → check Vercel logs
-2. If the API returns fewer than 5 images per column, it silently falls back to placeholder images (picsum.photos) — this is expected behaviour, not a bug
+2. Images load but are slow → `readNewsCache()` returned null and the route fell back to a live RSS fetch; check that the `fetch-news` cron is running
+3. If any column comes back with fewer than 5 images, the client treats the whole response as failed and shows picsum placeholders — this is expected behaviour, not a bug
+4. Blank columns on first paint are also expected; the component renders nothing until the client fetch resolves
+
+### Cron job shows timeout in the dashboard
+
+**A timeout in the cron-job.org dashboard does not mean the digest failed.** cron-job.org disconnects at 30 seconds. The Vercel function keeps running to its own `maxDuration = 60`. A run that takes 45 seconds shows as a timeout upstream and still sends every email. Confirm against Vercel logs before treating it as a failure.
 
 ### Vercel deployment failing
 
