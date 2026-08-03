@@ -50,7 +50,41 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@graph": [
+                {
+                  "@type": "Organization",
+                  "@id": "https://www.unbiasedtoday.com/#organization",
+                  name: "Unbiased Today",
+                  url: "https://www.unbiasedtoday.com",
+                  logo: "https://www.unbiasedtoday.com/apple-touch-icon.png",
+                  description:
+                    "A free daily news email that traces every story to its origin and scores it for authenticity and neutrality.",
+                  sameAs: [
+                    "https://x.com/unbiased_today",
+                    "https://www.youtube.com/@unbiasedtoday",
+                  ],
+                },
+                {
+                  "@type": "WebSite",
+                  "@id": "https://www.unbiasedtoday.com/#website",
+                  name: "Unbiased Today",
+                  url: "https://www.unbiasedtoday.com",
+                  publisher: {
+                    "@id": "https://www.unbiasedtoday.com/#organization",
+                  },
+                },
+              ],
+            }),
+          }}
+        />
+        {children}
+      </body>
     </html>
   );
 }
