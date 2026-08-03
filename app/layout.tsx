@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Unbiased Today",
-  description: "The world, unbiased. Every story traced to its origin, scored for authenticity and neutrality before it reaches you.",
+  title: "Unbiased Today: Your Daily Bias-Checked News Digest",
+  description: "Every story traced to its origin and scored for authenticity and neutrality before it reaches your inbox. A free, unbiased daily news digest.",
   metadataBase: new URL("https://www.unbiasedtoday.com"),
   icons: {
     icon: [
@@ -25,8 +25,8 @@ export const metadata: Metadata = {
     shortcut: "/favicon.ico",
   },
   openGraph: {
-    title: "Unbiased Today",
-    description: "The world, unbiased. Every story traced to its origin, scored for authenticity and neutrality before it reaches you.",
+    title: "Unbiased Today: Your Daily Bias-Checked News Digest",
+    description: "Every story traced to its origin and scored for authenticity and neutrality before it reaches your inbox. A free, unbiased daily news digest.",
     url: "https://www.unbiasedtoday.com",
     siteName: "Unbiased Today",
     type: "website",
@@ -34,8 +34,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Unbiased Today",
-    description: "The world, unbiased. Every story traced to its origin, scored for authenticity and neutrality before it reaches you.",
+    title: "Unbiased Today: Your Daily Bias-Checked News Digest",
+    description: "Every story traced to its origin and scored for authenticity and neutrality before it reaches your inbox. A free, unbiased daily news digest.",
     images: ["/og-image.png"],
   },
 };
