@@ -1,6 +1,6 @@
 # Unbiased Today — Developer Documentation
 
-**Last updated:** July 2026  
+**Last updated:** August 2026  
 **Production URL:** https://www.unbiasedtoday.com  
 **Repository:** github.com/siddharthabora/unbiased-news  
 
@@ -320,7 +320,7 @@ The client is created at module load time. A missing `SUPABASE_SERVICE_ROLE_KEY`
 - `ALL_TOPICS` array: the master list of all valid topics — must stay in sync with `VALID_TOPICS` in `subscribe/route.ts` and `TOPICS` in `page.tsx`
 - `isNineAmInTimezone()` — checks if the current UTC time corresponds to 9 AM in a given timezone
 - Returns: `{ ok: true, sent: N, failed: N }` — no subscriber emails in response
-- **DEV_MODE does not exist on this branch.** It is present only on `dev` and is not gated by an env var on `main` — the code is simply absent.
+- **DEV_MODE exists only on the `dev` branch, not on `main`.** It is not env-var-gated; on `main` the code is simply absent.
 
 **Where to look if:**
 - Emails not sending at the right time → check `isNineAmInTimezone()` logic and cron-job.org schedule
@@ -414,6 +414,28 @@ The client is created at module load time. A missing `SUPABASE_SERVICE_ROLE_KEY`
 **Three-state loading, and why it matters:** the `CarouselState` machine has `loading`, `ready` and `failed`. During `loading` the component renders **no images at all** — it does not render placeholders. Picsum URLs appear only on the `failed` branch, which is reachable only after a client fetch has resolved.
 
 ⚠️ **Do not render placeholders during `loading`.** It looks like an obvious UX improvement and it is not. It would put picsum.photos URLs back into the server-rendered HTML, which is what a crawler sees. The columns are decorative, so both wrappers carry `aria-hidden="true"` and every image uses `alt=""`, `loading="lazy"` and `decoding="async"`. There is no test covering any of this.
+
+---
+
+### `app/layout.tsx`
+
+**Purpose:** Root HTML layout and all metadata/SEO tags (`title`, `description`, `openGraph`, `twitter`, `metadataBase`, `icons`) plus the JSON-LD structured data block.
+
+**The title and description each exist in three places and must stay in sync:** the top-level `title`/`description`, the `openGraph` pair, and the `twitter` pair. A rewrite must update all three or the search result and the social cards will disagree.
+
+⚠️ **Two fields share the brand string "Unbiased Today" but must NOT change when rewriting the title:** `openGraph.siteName` and the OG image `alt`. A blind find-and-replace on "Unbiased Today" corrupts both. Match each title inside its surrounding context instead.
+
+**JSON-LD block:** an `application/ld+json` script in the `<body>` declares an `Organization` and a `WebSite` node linked by `@id`. Two deliberate exclusions to preserve: the private GitHub repo is kept out of `sameAs` (it would 404 to a crawler and is the wrong entity), and no `SearchAction`/sitelinks-searchbox is declared because there is no site-search endpoint to point it at, so adding one would be false markup. Structured data is not a ranking factor; it is entity and rich-result groundwork.
+
+---
+
+### `app/sitemap.ts`
+
+**Purpose:** Generates `/sitemap.xml`, listing the single canonical homepage URL on the www host (matching `metadataBase`). The paired `Sitemap:` line lives at the end of `public/robots.txt`.
+
+**`LANDING_LAST_MODIFIED` is a hand-set constant, on purpose.** It is the date the landing page's indexable content last changed, bumped by hand only on a real copy change.
+
+⚠️ **Do not wire `LANDING_LAST_MODIFIED` to news_cache or carousel freshness.** That content is decorative, client-fetched and aria-hidden, so a crawler cannot verify it as a change. Reporting a fresh date Google cannot verify makes Google distrust the lastmod and crawl less, and it would add a Supabase dependency plus a failure mode to what is currently a static file. `changefreq` and `priority` are omitted because Google ignores them.
 
 ---
 
@@ -625,6 +647,14 @@ If creating an entirely new region with no existing sources, also add sources in
 ### Change the email delivery time
 
 Currently hardcoded to 9 AM. To change it, search for `isNineAmInTimezone` in `app/api/cron/send-digest/route.ts` and modify the hour check.
+
+### Change the landing page copy (title, description, or headline)
+
+Two coupled follow-ups, both easy to forget:
+1. In `app/layout.tsx`, the `title` and `description` each appear in three places (top-level, `openGraph`, `twitter`) and all three must be updated together. Leave `siteName` and the OG image `alt` (both the brand name) unchanged.
+2. In `app/sitemap.ts`, bump `LANDING_LAST_MODIFIED` to the date of the change. This is the sitemap's honest last-modified signal and nothing updates it automatically.
+
+If you change the server-rendered `<h1>` text in `app/page.tsx`, also bump `LANDING_LAST_MODIFIED`, and confirm the new text still ships in the raw HTML (`curl -s https://www.unbiasedtoday.com | grep '<h1'`), since the static span is what crawlers read.
 
 ### Change GPT behaviour
 
