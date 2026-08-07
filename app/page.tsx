@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { LeftColumns, RightColumns } from './components/ScrollingImages'
+import StoryScoreTour from './components/StoryScoreTour'
 
 const HEADLINE = 'THE WORLD, UNBIASED.'
 
@@ -161,6 +162,10 @@ export default function Home() {
           <p className="text-zinc-500 text-sm leading-relaxed">
             Choose the topics you are interested in and your local timezone. The latest news will be delivered to your email at 9:00 a.m everyday.
           </p>
+
+          <div className="mt-8">
+            <StoryScoreTour />
+          </div>
         </div>
       </div>
 
