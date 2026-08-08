@@ -86,3 +86,5 @@ body {
   font-weight: 100;
   margin-left: 1px;
 }
+
+html { scroll-behavior: smooth; }

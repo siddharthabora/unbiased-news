@@ -1,6 +1,6 @@
 # Unbiased Today — Developer Documentation
 
-**Last updated:** August 2026  
+**Last updated:** August 8, 2026  
 **Production URL:** https://www.unbiasedtoday.com  
 **Repository:** github.com/siddharthabora/unbiased-news  
 
@@ -60,7 +60,7 @@ Subscribers choose their topics and timezone at sign-up. The newsletter is fully
 AI-newsletter/
 ├── app/
 │   ├── api/
-│   │   ├── carousel-images/route.ts   — Feeds images to landing page columns
+│   │   ├── carousel-images/route.ts   — Feeds the (retired) side columns; currently dormant
 │   │   ├── cron/
 │   │   │   ├── fetch-news/route.ts    — Fetches all RSS feeds and writes them to Supabase cache
 │   │   │   └── send-digest/route.ts   — MAIN PIPELINE: runs daily, sends all emails
@@ -70,10 +70,21 @@ AI-newsletter/
 │   │   ├── test-carousel/route.ts     — Dev only: tests carousel images (gitignored)
 │   │   └── test-regional/route.ts     — Dev only: tests regional filtering (gitignored)
 │   ├── components/
-│   │   └── ScrollingImages.tsx        — Landing page animated image columns
-│   ├── globals.css                    — Global styles and animations
+│   │   ├── TopNav.tsx                 — Sticky nav (logo, links, Subscribe, mobile hamburger)
+│   │   ├── Footer.tsx                 — Footer (section links, legal links, socials)
+│   │   ├── StoryScoreTour.tsx         — Hero interactive card zoom tour (client)
+│   │   ├── GetStartedSection.tsx      — Subscribe form, TOPICS/TIMEZONES, inline success (client)
+│   │   ├── TransparencySection.tsx    — "What we actually do" vertical flow (static)
+│   │   ├── FaqSection.tsx             — FAQ accordion + FAQPage JSON-LD (static)
+│   │   ├── GetInTouchSection.tsx      — Contact form via mailto (client)
+│   │   ├── LegalShell.tsx             — Shared shell for the legal pages
+│   │   └── ScrollingImages.tsx        — Old side columns (RETIRED, not rendered; kept for reuse)
+│   ├── disclaimer/page.tsx            — /disclaimer static legal page
+│   ├── privacy/page.tsx               — /privacy static legal page
+│   ├── terms/page.tsx                 — /terms static legal page
+│   ├── globals.css                    — Global styles and animations (+ smooth scroll)
 │   ├── layout.tsx                     — Root HTML layout + metadata/SEO tags
-│   └── page.tsx                       — Landing page (subscribe form)
+│   └── page.tsx                       — Landing page: composes nav + hero + sections + footer
 ├── lib/
 │   ├── fetchNews.ts                   — Fetches all RSS feeds, expands topics by keyword
 │   ├── newsCache.ts                   — Reads and writes the RSS article cache in Supabase
@@ -81,7 +92,7 @@ AI-newsletter/
 │   ├── regionMap.ts                   — Timezone → region mapping
 │   ├── sendEmail.ts                   — Builds HTML email, sends via Gmail API
 │   └── supabase.ts                    — Supabase client (service role, server-side only)
-├── public/                            — Static assets (favicon, OG image, robots.txt)
+├── public/                            — Static assets (favicon, OG image, robots.txt, unbiased-logo.png)
 ├── .github/
 │   └── workflows/
 │       └── send-digest.yml            — GitHub Action for manual digest trigger
@@ -391,11 +402,11 @@ The client is created at module load time. A missing `SUPABASE_SERVICE_ROLE_KEY`
 
 ### `app/page.tsx`
 
-**Purpose:** The landing page — the only user-facing page. Contains the subscribe form.
+**Purpose:** The landing page. Now a thin composition, not the form itself. It renders `TopNav`, the hero (LIVE badge, the `<h1>`, the typewriter, the subtitle and `StoryScoreTour`), then `GetStartedSection`, `TransparencySection`, `FaqSection`, `GetInTouchSection`, and `Footer`, inside a normal document-flow layout (`min-h-screen flex flex-col`).
 
-- `TOPICS` array: displayed topic chips for the subscriber to select. Must match `ALL_TOPICS` in the cron route and `VALID_TOPICS` in the subscribe route.
-- `TIMEZONES` array: the dropdown options. Values must be valid IANA timezone strings also present in `lib/regionMap.ts`.
-- Submits to `POST /api/subscribe`
+- The subscribe form, `TOPICS`, `TIMEZONES`, `handleSubmit` and the submit-success state have moved OUT into `app/components/GetStartedSection.tsx`. They are no longer here.
+- The hero, including the `<h1>` and its typewriter, is still inline here and still client-side.
+- The old locked `h-screen flex overflow-hidden` row with side image columns is gone; the page scrolls as a normal document and `ScrollingImages` is no longer rendered.
 
 **The `<h1>` renders its text twice on purpose.** The static `<span>` containing `{HEADLINE}` is what the server sends and what crawlers read. The typewriter `<span>` is absolutely positioned on top of it and only mounts once `typingStarted` flips true in a client effect. The `'use client'` directive at the top of the file does not prevent server rendering — App Router still server-renders client components on the first request, and `typingStarted` is false at that point, so the static span renders without its `invisible` class.
 
@@ -404,6 +415,8 @@ The client is created at module load time. A missing `SUPABASE_SERVICE_ROLE_KEY`
 ---
 
 ### `app/components/ScrollingImages.tsx`
+
+⚠️ **Currently retired — not rendered anywhere.** The side pillars were removed from `page.tsx` in the Aug 2026 redesign. This file and `/api/carousel-images` are kept for a planned horizontal strip that will reuse them. Everything below still applies if it is re-rendered.
 
 **Purpose:** The animated scrolling image columns on the left and right of the landing page.
 
@@ -416,6 +429,30 @@ The client is created at module load time. A missing `SUPABASE_SERVICE_ROLE_KEY`
 ⚠️ **Do not render placeholders during `loading`.** It looks like an obvious UX improvement and it is not. It would put picsum.photos URLs back into the server-rendered HTML, which is what a crawler sees. The columns are decorative, so both wrappers carry `aria-hidden="true"` and every image uses `alt=""`, `loading="lazy"` and `decoding="async"`. There is no test covering any of this.
 
 ---
+
+### `app/components/TopNav.tsx`
+Sticky top navigation (client, holds the mobile menu `open` state). Logo links home; section links jump to `#what`, `#faq`, `#contact`; Subscribe jumps to `#subscribe`. On phones the section links collapse into a hamburger panel, but the desktop links stay in the DOM (CSS-hidden), so they remain in the server HTML.
+
+### `app/components/Footer.tsx`
+Site footer: section anchor links, legal links, socials. **Legal links use Next `<Link>`, not `<a>`** — an internal route reached with a plain `<a>` fails the Vercel build. Social links are external `<a>`.
+
+### `app/components/StoryScoreTour.tsx`
+The hero's interactive card zoom tour (client). Autoplays through Authenticity, Neutrality and the flag cluster, and stops for good the moment a pill is tapped. Reduced-motion gets a static card. The card markup and captions are static JSX and ship in the server HTML — do not gate that text behind client state.
+
+### `app/components/GetStartedSection.tsx`
+The subscribe form, extracted from `page.tsx` (client). **Owns `TOPICS` and `TIMEZONES`** (moved here from `page.tsx`), plus `toggleTopic`, `handleSubmit` and the inline submit-success state. `TOPICS` must stay in sync with `ALL_TOPICS` (send-digest) and `VALID_TOPICS` (subscribe route); `TIMEZONES` values must exist in `lib/regionMap.ts`. Renders immediately, independent of the hero animation.
+
+### `app/components/TransparencySection.tsx`
+"What we actually do" — a four-step vertical flow (Many sources, Checked, Matched, Delivered) with inline SVG icons. Static, no `'use client'`, so the copy is server-rendered for SEO. Copy is deliberately conservative: multiple outlets, not same-event comparison, and no model or pipeline detail.
+
+### `app/components/FaqSection.tsx`
+FAQ as a native `<details>` accordion built from a `FAQS` array (8 Q&As). Emits a `FAQPage` JSON-LD script **derived from the same array**, so schema cannot drift from the visible answers. Static — answers ship in the HTML even when collapsed; **do not swap `<details>` for a JS accordion that unmounts answers.** Google deprecated FAQ rich results in May 2026, so the schema is machine-parsing only, not a SERP feature.
+
+### `app/components/GetInTouchSection.tsx`
+Contact form (name, email, query) that builds a `mailto:news.unbiasedai@gmail.com` link on Send (client). `mailto` is unreliable on desktops with no mail client; a server-side `/api/contact` route is the upgrade path if needed.
+
+### `app/components/LegalShell.tsx` and the legal pages
+`LegalShell` is the shared wrapper for the legal pages: logo-home header, title, last-updated date, body, bottom cross-links. `app/disclaimer/page.tsx`, `app/privacy/page.tsx` and `app/terms/page.tsx` are static server components, each with copy in a `SECTIONS` array and its own `metadata`. Contact is `news.unbiasedai@gmail.com`. The copy is founder-reviewed plain language, not lawyer-drafted.
 
 ### `app/layout.tsx`
 
@@ -447,7 +484,7 @@ The client is created at module load time. A missing `SUPABASE_SERVICE_ROLE_KEY`
 | `GET` | `/api/unsubscribe` | HMAC token in URL | Remove subscriber |
 | `GET` | `/api/cron/fetch-news` | `CRON_SECRET` bearer token | Fetch all RSS feeds and write to Supabase cache |
 | `GET` | `/api/cron/send-digest` | `CRON_SECRET` bearer token | Run the full digest pipeline |
-| `GET` | `/api/carousel-images` | None | Supply images to landing page |
+| `GET` | `/api/carousel-images` | None | Supply images to the (retired) side columns — currently dormant |
 
 **Test-only routes (gitignored, not deployed to Vercel):**
 
@@ -634,13 +671,13 @@ Four places need to be updated in sync:
 1. `lib/fetchNews.ts` → `TOPIC_KEYWORD_EXPANSION` — add keywords for the topic
 2. `app/api/cron/send-digest/route.ts` → `ALL_TOPICS` array
 3. `app/api/subscribe/route.ts` → `VALID_TOPICS` set
-4. `app/page.tsx` → `TOPICS` array (for display on the landing page)
+4. `app/components/GetStartedSection.tsx` → `TOPICS` array (for display on the landing page)
 
 ### Add a new timezone/region
 
 Two places:
 1. `lib/regionMap.ts` → `TIMEZONE_TO_REGION` — add the IANA timezone and map it to a region key
-2. `app/page.tsx` → `TIMEZONES` array — add the display label and value
+2. `app/components/GetStartedSection.tsx` → `TIMEZONES` array — add the display label and value
 
 If creating an entirely new region with no existing sources, also add sources in `lib/fetchNews.ts` with the new `regions` key, and add a fallback in `REGION_FALLBACKS` if needed.
 
@@ -655,6 +692,8 @@ Two coupled follow-ups, both easy to forget:
 2. In `app/sitemap.ts`, bump `LANDING_LAST_MODIFIED` to the date of the change. This is the sitemap's honest last-modified signal and nothing updates it automatically.
 
 If you change the server-rendered `<h1>` text in `app/page.tsx`, also bump `LANDING_LAST_MODIFIED`, and confirm the new text still ships in the raw HTML (`curl -s https://www.unbiasedtoday.com | grep '<h1'`), since the static span is what crawlers read.
+
+Section body copy (Transparency, FAQ, Get in touch) now lives in the respective `*Section.tsx` components, and the legal page copy lives in `SECTIONS` arrays in `app/disclaimer|privacy|terms/page.tsx`. Editing any indexable copy should also bump `LANDING_LAST_MODIFIED`.
 
 ### Change GPT behaviour
 
@@ -716,3 +755,14 @@ This migration has not been started. Track it before the end of 2026.
 - Google Cloud project: `news.unbiasedai@gmail.com` (new project — the old `unbaisedai.news@gmail.com` project is deprecated)
 - OAuth app status: "In production" (published May 2026) — refresh tokens no longer expire on a 7-day cycle; token only expires if unused for 6 months, access is revoked, or the account password changes
 - OAuth credentials (Client ID: `999061842577-...`) are stored in Vercel env vars only
+
+---
+
+## Open items (August 2026 redesign wrap-up)
+
+- `LANDING_LAST_MODIFIED` in `app/sitemap.ts` needs bumping to the redesign date. Pending as the final code edit before shipping.
+- `app/sitemap.ts` lists only the homepage; `/disclaimer`, `/privacy` and `/terms` are not yet in it. Pending in the same edit.
+- Umami analytics is not installed. `/privacy` states "we do not currently run website analytics" — if Umami is added later, change that line in the same commit.
+- Topic removal is add-only: resubmitting merges topics and never removes them. The FAQ matches this. Removal is a known future gap.
+- Legal copy is founder-reviewed plain language, not lawyer-drafted. Review before relying on it.
+- The whole redesign sits on `dev`, unshipped; production shows the pre-redesign pillars layout until the cherry-pick.
