@@ -15,7 +15,7 @@ export default function TopNav() {
     <nav className="sticky top-0 z-50 bg-[#0f0f0f]/80 backdrop-blur border-b border-[#1f1f1f]">
       <div className="flex items-center justify-between px-5 h-[60px]">
         <a href="#top" aria-label="Unbiased Today home">
-          <img src="/unbiased-logo.png" alt="Unbiased Today" className="h-[26px] w-auto" />
+          <img src="/unbiased-logo.png" alt="Unbiased Today" className="h-[72px] w-auto" />
         </a>
 
         <div className="flex items-center gap-4 sm:gap-7">
