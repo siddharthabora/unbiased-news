@@ -158,7 +158,7 @@ export default function GetStartedSection() {
               <button
                 type="submit"
                 disabled={selectedTopics.length === 0 || loading}
-                className="w-full bg-white text-black font-medium py-3 rounded-lg text-sm hover:bg-zinc-200 transition-colors disabled:opacity-25 disabled:cursor-not-allowed"
+                className="w-full bg-[#ff5757] text-white font-semibold py-3 rounded-full text-sm enabled:hover:brightness-110 transition disabled:opacity-25 disabled:cursor-not-allowed"
               >
                 {loading ? 'Subscribing…' : "Subscribe — it's free"}
               </button>
