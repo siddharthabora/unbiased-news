@@ -6,15 +6,15 @@ export default function Footer() {
       <div className="max-w-3xl mx-auto px-6 flex flex-col gap-6">
         <div className="flex justify-between items-start gap-5 flex-wrap">
           <div>
-            <img src="/unbiased-logo.png" alt="Unbiased Today" className="h-[22px] w-auto opacity-90" />
+            <Link href="/" aria-label="Unbiased Today home"><img src="/unbiased-logo.png" alt="Unbiased Today" className="h-[42px] w-auto opacity-90" /></Link>
             <p className="text-zinc-500 text-[13px] mt-3 max-w-[34ch] leading-relaxed">
               The world, unbiased. One checked briefing every morning, not ten open tabs.
             </p>
           </div>
           <nav className="flex flex-col gap-2.5 sm:text-right">
-            <a href="#what" className="text-zinc-400 hover:text-[#ff5757] text-[13.5px] transition-colors">Transparency</a>
-            <a href="#faq" className="text-zinc-400 hover:text-[#ff5757] text-[13.5px] transition-colors">FAQ</a>
-            <a href="#contact" className="text-zinc-400 hover:text-[#ff5757] text-[13.5px] transition-colors">Contact</a>
+            <Link href="/#what" className="text-zinc-400 hover:text-[#ff5757] text-[13.5px] transition-colors">Transparency</Link>
+            <Link href="/#faq" className="text-zinc-400 hover:text-[#ff5757] text-[13.5px] transition-colors">FAQ</Link>
+            <Link href="/#contact" className="text-zinc-400 hover:text-[#ff5757] text-[13.5px] transition-colors">Contact</Link>
             <Link href="/disclaimer" className="text-zinc-400 hover:text-[#ff5757] text-[13.5px] transition-colors">Disclaimer</Link>
             <Link href="/terms" className="text-zinc-400 hover:text-[#ff5757] text-[13.5px] transition-colors">Terms</Link>
             <Link href="/privacy" className="text-zinc-400 hover:text-[#ff5757] text-[13.5px] transition-colors">Privacy</Link>
