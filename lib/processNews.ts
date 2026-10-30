@@ -133,8 +133,8 @@ async function selectRelevantIndices(
     .join('\n')
 
   const response = await openai.chat.completions.create({
-    model: 'gpt-4.1-nano',
-    temperature: 0.1,
+    model: 'gpt-5.6-luna',
+    reasoning_effort: 'none',
     messages: [
       {
         role: 'system',
@@ -179,8 +179,8 @@ async function analyzeArticles(articles: NewsItem[]): Promise<ProcessedNewsItem[
     .join('\n\n---\n\n')
 
   const response = await openai.chat.completions.create({
-    model: 'gpt-4.1-nano',
-    temperature: 0.2,
+    model: 'gpt-5.6-luna',
+    reasoning_effort: 'none',
     messages: [
       {
         role: 'system',
@@ -355,6 +355,8 @@ export async function selectAndSummarize(
   for (const result of topicResults) {
     if (result.status === 'fulfilled' && Array.isArray(result.value)) {
       allProcessed.push(...result.value)
+    } else if (result.status === 'rejected') {
+      console.error('[TOPIC] failed:', result.reason)
     }
   }
   if (allProcessed.length === 0) return []

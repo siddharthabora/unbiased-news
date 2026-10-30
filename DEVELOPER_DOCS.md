@@ -221,8 +221,8 @@ app/api/cron/send-digest/route.ts
 - `sortByRegionalPriority()` — sorts articles: regional Tier 1 first, then regional Tier 2, then global Tier 1, then global Tier 2
 - `deduplicateByTitle()` — removes near-duplicate articles using Jaccard similarity on normalised title words (threshold 0.45)
 - `titleJaccard()` / `normalizeTitle()` — the similarity calculation (removes stop words, punctuation, short words)
-- `selectRelevantIndices()` — cheap GPT call: picks which article indices are relevant to a topic (model: gpt-4.1-nano)
-- `analyzeArticles()` — deep GPT call: runs full authenticity + bias + summary analysis on selected articles (model: gpt-4.1-nano)
+- `selectRelevantIndices()` — cheap GPT call: picks which article indices are relevant to a topic (model: gpt-5.6-luna)
+- `analyzeArticles()` — deep GPT call: runs full authenticity + bias + summary analysis on selected articles (model: gpt-5.6-luna)
 - `perTopic` — number of articles per topic: `Math.min(3, Math.max(2, Math.ceil(14 / topics.length)))`
 
 **GPT prompts live inside:**
@@ -699,7 +699,8 @@ Section body copy (Transparency, FAQ, Get in touch) now lives in the respective 
 
 - **Article selection logic** → `lib/processNews.ts` → `selectRelevantIndices()` → edit the system or user prompt
 - **Analysis scoring** → `lib/processNews.ts` → `analyzeArticles()` → edit the system prompt (the three `## ANALYSIS` sections)
-- **GPT model** → change `model: 'gpt-4.1-nano'` in either function
+- **GPT model** → change `model: 'gpt-5.6-luna'` in either function
+  - Note: gpt-5.6-luna rejects any `temperature` value other than 1, so don't add `temperature` back. Keep `reasoning_effort: 'none'` on both calls: the default is medium, which bills hidden reasoning tokens as output and adds latency against the 60s maxDuration.
 
 ### Rotate credentials
 
