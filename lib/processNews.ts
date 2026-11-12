@@ -133,7 +133,7 @@ async function selectRelevantIndices(
     .join('\n')
 
   const response = await openai.chat.completions.create({
-    model: 'gpt-5.6-luna',
+    model: 'gpt-5.4-mini',
     reasoning_effort: 'none',
     messages: [
       {
@@ -179,7 +179,7 @@ async function analyzeArticles(articles: NewsItem[]): Promise<ProcessedNewsItem[
     .join('\n\n---\n\n')
 
   const response = await openai.chat.completions.create({
-    model: 'gpt-5.6-luna',
+    model: 'gpt-5.4-mini',
     reasoning_effort: 'none',
     messages: [
       {
